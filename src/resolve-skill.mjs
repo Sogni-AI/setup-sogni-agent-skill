@@ -5,7 +5,7 @@ import { join } from 'node:path';
 const PKG = '@sogni-ai/sogni-creative-agent-skill';
 
 export function resolveSkillSource({ npmRoot } = {}) {
-  const root = npmRoot ?? execSync('npm root -g', { encoding: 'utf8' }).trim();
+  const root = npmRoot ?? process.env.SOGNI_TEST_NPM_ROOT ?? execSync('npm root -g', { encoding: 'utf8' }).trim();
   const srcDir = join(root, PKG);
   const skillMd = join(srcDir, 'SKILL.md');
   if (!existsSync(skillMd)) {
