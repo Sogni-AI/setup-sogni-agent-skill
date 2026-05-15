@@ -1,0 +1,5 @@
+test/
+.github/
+.nvmrc
+.gitignore
+.tmp-test-home/

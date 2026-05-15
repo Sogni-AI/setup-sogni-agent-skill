@@ -1,0 +1,43 @@
+{
+  "name": "setup-sogni-agent-skill",
+  "version": "0.1.0",
+  "description": "One-command installer that registers the Sogni Creative Agent Skill into Claude Code, OpenAI Codex CLI, Hermes Agent, and prints ChatGPT Custom-GPT instructions.",
+  "type": "module",
+  "bin": {
+    "setup-sogni-agent-skill": "./bin/setup.mjs"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs test/setup.integration.mjs"
+  },
+  "keywords": [
+    "sogni",
+    "ai",
+    "agent",
+    "skill",
+    "installer",
+    "claude-code",
+    "codex",
+    "hermes",
+    "image-generation"
+  ],
+  "author": "Mauvis Ledford",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Sogni-AI/setup-sogni-agent-skill.git"
+  },
+  "homepage": "https://github.com/Sogni-AI/setup-sogni-agent-skill#readme",
+  "engines": {
+    "node": ">=22"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "README.md",
+    "LICENSE"
+  ],
+  "dependencies": {
+    "kleur": "^4.1.5",
+    "prompts": "^2.4.2"
+  }
+}
