@@ -2,6 +2,7 @@
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 export function withTempHome(t) {
   const home = mkdtempSync(join(tmpdir(), 'sogni-setup-test-'));
@@ -17,4 +18,4 @@ export function withTempHome(t) {
   return home;
 }
 
-export const FIXTURE_SKILL_SRC = new URL('./fixtures/skill-src/', import.meta.url).pathname;
+export const FIXTURE_SKILL_SRC = fileURLToPath(new URL('./fixtures/skill-src/', import.meta.url));
