@@ -19,7 +19,7 @@ function detectClaudeCode() {
   const home = homedir();
   const path = join(home, '.claude');
   if (!existsSync(path)) {
-    return { runtime: 'claude-code', status: 'not-found', path: null, installedVersion: null };
+    return { runtime: 'claude-code', status: 'not-found', path: null, skillDir: null, installedVersion: null };
   }
   const skillDir = join(path, 'skills', SKILL_DIR_NAME);
   const marker = readMarker(skillDir);
@@ -36,7 +36,7 @@ function detectCodexCli() {
   const home = homedir();
   const path = join(home, '.codex');
   if (!existsSync(path)) {
-    return { runtime: 'codex-cli', status: 'not-found', path: null, installedVersion: null };
+    return { runtime: 'codex-cli', status: 'not-found', path: null, skillDir: null, installedVersion: null };
   }
   const skillDir = join(path, 'skills', SKILL_DIR_NAME);
   const marker = readMarker(skillDir);
@@ -53,7 +53,7 @@ function detectHermes() {
   const home = homedir();
   const path = join(home, '.hermes');
   if (!existsSync(path)) {
-    return { runtime: 'hermes', status: 'not-found', path: null, installedVersion: null };
+    return { runtime: 'hermes', status: 'not-found', path: null, skillDir: null, installedVersion: null };
   }
   const skillsRoot = join(path, 'skills');
   let installedCategory = null;
