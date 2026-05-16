@@ -28,7 +28,7 @@
   },
   "homepage": "https://github.com/Sogni-AI/setup-sogni-agent-skill#readme",
   "engines": {
-    "node": ">=22"
+    "node": "22.22.0"
   },
   "files": [
     "bin/",
