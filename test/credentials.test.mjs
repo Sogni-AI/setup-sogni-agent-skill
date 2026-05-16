@@ -36,7 +36,10 @@ test('prompts and writes file with 0o600 when nothing set', async (t) => {
   const path = join(home, '.config/sogni/credentials');
   assert.ok(existsSync(path));
   assert.equal(readFileSync(path, 'utf8'), 'SOGNI_API_KEY=sk-new-key\n');
-  assert.equal(statSync(path).mode & 0o777, 0o600);
+  // POSIX mode bits are not meaningful on Windows; skip the perm assertion there.
+  if (process.platform !== 'win32') {
+    assert.equal(statSync(path).mode & 0o777, 0o600);
+  }
   assert.equal(result.action, 'written');
   assert.equal(result.path, path);
 });

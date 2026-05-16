@@ -11,8 +11,14 @@ test('install writes SKILL.md only with 0o600 perms', (t) => {
   const skillDir = join(home, '.hermes/skills/media/sogni-creative-agent-skill');
   assert.ok(existsSync(join(skillDir, 'SKILL.md')));
   assert.equal(existsSync(join(skillDir, 'llm.txt')), false);
-  const mode = statSync(join(skillDir, 'SKILL.md')).mode & 0o777;
-  assert.equal(mode, 0o600);
+  // POSIX mode bits do not exist on Windows: fs.chmod cannot express
+  // user/group/other separation, and statSync reports 0o666 for any writable
+  // file regardless of what mode was requested. The install code still calls
+  // chmod(0o600) on Windows (no-op), but the assertion is untestable there.
+  if (process.platform !== 'win32') {
+    const mode = statSync(join(skillDir, 'SKILL.md')).mode & 0o777;
+    assert.equal(mode, 0o600);
+  }
 });
 
 test('backs up existing SKILL.md before overwriting', (t) => {
