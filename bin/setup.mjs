@@ -45,6 +45,10 @@ try {
   const { exitCode } = await run(flags);
   process.exit(exitCode);
 } catch (err) {
+  if (err.kind === 'permission') {
+    // installCli already printed a friendly, formatted explanation.
+    process.exit(1);
+  }
   console.error('setup-sogni-agent-skill failed:', err.message);
   process.exit(1);
 }

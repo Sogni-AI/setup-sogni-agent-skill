@@ -8,6 +8,7 @@ import { detectAll } from './detect.mjs';
 import { installCli } from './install-cli.mjs';
 import { resolveSkillSource } from './resolve-skill.mjs';
 import { ensureCredentials } from './credentials.mjs';
+import { recommendFfmpeg } from './check-ffmpeg.mjs';
 import { printSummary } from './summary.mjs';
 
 const ADAPTERS = {
@@ -65,6 +66,9 @@ export async function run(flags) {
   // 1. Install the global CLI (writes nothing else yet).
   console.log(kleur.bold(`Installing @sogni-ai/sogni-creative-agent-skill@${flags.version} globally...`));
   const cli = installCli({ version: flags.version });
+
+  // 1b. Recommend ffmpeg (non-blocking) — used by clip merging and frame extraction.
+  recommendFfmpeg();
 
   // 2. Resolve skill source on disk.
   const skill = resolveSkillSource();
