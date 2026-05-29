@@ -54,3 +54,18 @@ test('parses --dry-run, --uninstall, --remove-cli, --symlink, --no-credentials',
 test('rejects unknown flags', () => {
   assert.throws(() => parseFlags(['--bogus']), /Unknown flag/);
 });
+
+test('parses --purge', () => {
+  assert.equal(parseFlags(['--purge']).purge, true);
+});
+
+test('--purge defaults to false', () => {
+  assert.equal(parseFlags([]).purge, false);
+});
+
+test('parses --uninstall --remove-cli --purge together', () => {
+  const f = parseFlags(['--uninstall', '--remove-cli', '--purge']);
+  assert.equal(f.uninstall, true);
+  assert.equal(f.removeCli, true);
+  assert.equal(f.purge, true);
+});
