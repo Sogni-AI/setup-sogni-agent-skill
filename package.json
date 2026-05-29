@@ -1,6 +1,6 @@
 {
   "name": "setup-sogni-agent-skill",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "One-command installer that registers the Sogni Creative Agent Skill into Claude Code, OpenAI Codex CLI, Hermes Agent, and prints ChatGPT Custom-GPT instructions.",
   "type": "module",
   "bin": {
