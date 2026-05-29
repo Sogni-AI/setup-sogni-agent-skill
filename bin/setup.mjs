@@ -20,6 +20,7 @@ Options:
   --output-chatgpt-bundle=PATH    Also write Custom-GPT instructions to a file
   --uninstall                     Remove previously installed skill files
   --remove-cli                    With --uninstall, also npm uninstall -g
+  --purge                         Remove ~/.config/sogni/ (data) after a tar backup
   --help, -h                      Show this help
 
 Docs: https://github.com/Sogni-AI/sogni-creative-agent-skill

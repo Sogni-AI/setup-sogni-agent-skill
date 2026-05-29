@@ -42,6 +42,32 @@ npx setup-sogni-agent-skill --uninstall --remove-cli   # also remove the global 
 
 Run `npx setup-sogni-agent-skill --help` for the full flag list.
 
+### Complete uninstall (remove your data too)
+
+`--uninstall` and `--remove-cli` remove the skill files and the global CLI but
+leave your Sogni data in `~/.config/sogni/` (API key, personas, memories,
+personality, last render). To remove that too, add `--purge`:
+
+```bash
+# Remove data only (skill files and CLI stay installed)
+npx setup-sogni-agent-skill --purge
+
+# Full teardown: skill files, then global CLI, then data
+npx setup-sogni-agent-skill --uninstall --remove-cli --purge
+```
+
+`--purge` asks for confirmation (skip with `--yes`) and **always writes a backup
+tarball first**: `~/.config/sogni.backup-<timestamp>.tar.gz`. If the backup
+cannot be written, the purge aborts and your data is left untouched. Shared
+paths used by other tools (`~/.openclaw/openclaw.json`, `~/.clawdbot/`) are never
+touched.
+
+To recover from a backup:
+
+```bash
+tar -xzf ~/.config/sogni.backup-<timestamp>.tar.gz -C ~/.config
+```
+
 ## Requirements
 
 - Node.js ≥ 22
