@@ -3,6 +3,7 @@ const BOOL_FLAGS = new Set([
   '--dry-run',
   '--uninstall',
   '--remove-cli',
+  '--purge',
   '--symlink',
   '--no-credentials',
 ]);
@@ -21,6 +22,7 @@ export function parseFlags(argv) {
     dryRun: false,
     uninstall: false,
     removeCli: false,
+    purge: false,
     symlink: false,
     noCredentials: false,
     version: 'latest',
@@ -35,6 +37,7 @@ export function parseFlags(argv) {
       else if (arg === '--dry-run') out.dryRun = true;
       else if (arg === '--uninstall') out.uninstall = true;
       else if (arg === '--remove-cli') out.removeCli = true;
+      else if (arg === '--purge') out.purge = true;
       else if (arg === '--symlink') out.symlink = true;
       else if (arg === '--no-credentials') out.noCredentials = true;
       continue;
