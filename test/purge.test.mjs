@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -20,6 +20,10 @@ function seedDataDir(home) {
 }
 
 const FIXED = new Date(2026, 4, 29, 13, 5, 9); // 2026-05-29 13:05:09 local
+
+// Defensive: clear any unconsumed injected prompt values so no test inherits a
+// stale injection queue from a prior test.
+beforeEach(() => prompts.inject([]));
 
 test('backs up then deletes the data dir', async (t) => {
   const home = withTempHome(t);
@@ -88,6 +92,7 @@ test('shared paths outside ~/.config/sogni are never touched', async (t) => {
   mkdirSync(join(home, '.clawdbot', 'media', 'inbound'), { recursive: true });
   writeFileSync(join(home, '.clawdbot', 'media', 'inbound', 'pic.png'), 'data');
   await runPurge({ yes: true, now: FIXED });
+  assert.equal(existsSync(join(home, '.config', 'sogni')), false);
   assert.equal(existsSync(join(home, '.openclaw', 'openclaw.json')), true);
   assert.equal(existsSync(join(home, '.clawdbot', 'media', 'inbound', 'pic.png')), true);
 });
