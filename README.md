@@ -68,6 +68,10 @@ To recover from a backup:
 tar -xzf ~/.config/sogni.backup-<timestamp>.tar.gz -C ~/.config
 ```
 
+The backup tarball is left in `~/.config/` and is not removed automatically — it
+contains your API key, so delete it yourself once you're sure you no longer need
+it.
+
 ## Requirements
 
 - Node.js ≥ 22
