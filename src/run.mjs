@@ -8,6 +8,7 @@ import { detectAll } from './detect.mjs';
 import { installCli } from './install-cli.mjs';
 import { resolveSkillSource } from './resolve-skill.mjs';
 import { ensureCredentials } from './credentials.mjs';
+import { runPurge } from './purge.mjs';
 import { recommendFfmpeg } from './check-ffmpeg.mjs';
 import { printSummary } from './summary.mjs';
 
@@ -61,6 +62,9 @@ async function confirm(message, { defaultYes = true } = {}) {
 export async function run(flags) {
   if (flags.uninstall) {
     return runUninstall(flags);
+  }
+  if (flags.purge) {
+    return runPurgeOnly(flags);
   }
 
   // 1. Install the global CLI (writes nothing else yet).
@@ -143,6 +147,12 @@ export async function run(flags) {
   return { cli, adapterResults, credentials, exitCode: failures > 0 ? failures : 0 };
 }
 
+async function runPurgeOnly(flags) {
+  const purge = await runPurge({ yes: flags.yes, dryRun: flags.dryRun });
+  printSummary({ adapterResults: [], cli: null, credentials: null, purge });
+  return { exitCode: purge.status === 'failed' ? 1 : 0 };
+}
+
 async function runUninstall(flags) {
   const all = detectAll();
   const filtered = filterByFlags(all, flags);
@@ -162,6 +172,10 @@ async function runUninstall(flags) {
     const { spawnSync } = await import('node:child_process');
     spawnSync('npm', ['uninstall', '-g', '@sogni-ai/sogni-creative-agent-skill'], { stdio: 'inherit' });
   }
-  printSummary({ adapterResults: results, cli: null, credentials: null });
-  return { exitCode: 0 };
+  let purge = null;
+  if (flags.purge) {
+    purge = await runPurge({ yes: flags.yes, dryRun: flags.dryRun });
+  }
+  printSummary({ adapterResults: results, cli: null, credentials: null, purge });
+  return { exitCode: purge?.status === 'failed' ? 1 : 0 };
 }
