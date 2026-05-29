@@ -12,7 +12,7 @@ const STATUS_ICONS = {
   removed: kleur.yellow('→ removed'),
 };
 
-export function printSummary({ adapterResults, cli, credentials }) {
+export function printSummary({ adapterResults, cli, credentials, purge = null }) {
   console.log('');
   console.log(kleur.bold('Done.'));
   for (const r of adapterResults) {
@@ -38,6 +38,17 @@ export function printSummary({ adapterResults, cli, credentials }) {
       'skipped-flag': kleur.gray('skipped (--no-credentials)'),
     };
     console.log(`  ${'API key'.padEnd(16)} ${''.padEnd(60)} ${map[credentials.action] ?? credentials.action}`);
+  }
+  if (purge) {
+    const map = {
+      purged: kleur.yellow(`backed up to ${purge.backup}, removed`),
+      'would-purge': kleur.cyan(`would back up to ${purge.backup} and remove (dry-run)`),
+      cancelled: kleur.gray('cancelled — data kept'),
+      skipped: kleur.gray('not found — nothing to remove'),
+      failed: kleur.red('backup failed — data NOT removed'),
+    };
+    const target = purge.removed ?? '~/.config/sogni/';
+    console.log(`  ${'Data'.padEnd(16)} ${target.padEnd(60)} ${map[purge.status] ?? purge.status}`);
   }
   console.log('');
   console.log('Next steps:');
