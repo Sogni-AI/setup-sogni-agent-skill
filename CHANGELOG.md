@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.5.0
+
+### Features
+
+- **Animated terminal UI**, ported from `sogni-project-downloader`: a
+  plasma-shaded block-letter SOGNI banner with twinkling starfields on launch,
+  a rainbow spinner over an interference wave while `npm install -g` runs
+  (npm output is captured and replayed only on failure), a rainbow detection
+  header, and a starburst finale. Pure ANSI, zero new dependencies. Disabled
+  automatically when stdout is not a TTY or `NO_COLOR` is set, and manually
+  with the new `--no-ui` / `--boring` flags.
+
+### Changed
+
+- `installCli()` is now async (`spawn` instead of `spawnSync`) so the spinner
+  can animate during the global install. Plain-output behavior is unchanged:
+  npm's stdout is still inherited when the UI is off.
+
 ## 0.4.1
 
 ### Fixed

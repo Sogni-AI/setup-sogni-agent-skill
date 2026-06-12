@@ -43,9 +43,17 @@ npx setup-sogni-agent-skill --version=2.3.0
 # Uninstall
 npx setup-sogni-agent-skill --uninstall
 npx setup-sogni-agent-skill --uninstall --remove-cli   # also remove the global CLI
+
+# Plain output (no animated banner / spinner)
+npx setup-sogni-agent-skill --no-ui
 ```
 
 Run `npx setup-sogni-agent-skill --help` for the full flag list.
+
+Interactive runs open with an animated SOGNI banner, show a spinner while npm
+works, and end with a starburst. The animations are pure ANSI (no extra
+dependencies) and switch themselves off when output is piped, when `NO_COLOR`
+is set, or with `--no-ui` / `--boring`.
 
 ### Complete uninstall (remove your data too)
 

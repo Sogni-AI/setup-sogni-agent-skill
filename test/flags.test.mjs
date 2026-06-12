@@ -55,6 +55,13 @@ test('rejects unknown flags', () => {
   assert.throws(() => parseFlags(['--bogus']), /Unknown flag/);
 });
 
+test('parses --no-ui and --boring, defaulting to false', () => {
+  assert.equal(parseFlags([]).noUi, false);
+  assert.equal(parseFlags([]).boring, false);
+  assert.equal(parseFlags(['--no-ui']).noUi, true);
+  assert.equal(parseFlags(['--boring']).boring, true);
+});
+
 test('parses --purge', () => {
   assert.equal(parseFlags(['--purge']).purge, true);
 });

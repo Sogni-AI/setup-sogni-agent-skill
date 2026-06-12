@@ -21,6 +21,9 @@ Options:
   --uninstall                     Remove previously installed skill files
   --remove-cli                    With --uninstall, also npm uninstall -g
   --purge                         Remove ~/.config/sogni/ (data) after a tar backup
+  --no-ui                         Plain output — no banner/spinner animations
+                                  (also auto-disabled when piped or NO_COLOR is set)
+  --boring                        Alias for --no-ui
   --help, -h                      Show this help
 
 Docs: https://github.com/Sogni-AI/sogni-creative-agent-skill

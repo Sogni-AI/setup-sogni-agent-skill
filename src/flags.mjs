@@ -6,6 +6,8 @@ const BOOL_FLAGS = new Set([
   '--purge',
   '--symlink',
   '--no-credentials',
+  '--no-ui',
+  '--boring',
 ]);
 
 const VALUE_FLAGS = new Set([
@@ -25,6 +27,8 @@ export function parseFlags(argv) {
     purge: false,
     symlink: false,
     noCredentials: false,
+    noUi: false,
+    boring: false,
     version: 'latest',
     hermesCategory: 'media',
     only: null,
@@ -40,6 +44,8 @@ export function parseFlags(argv) {
       else if (arg === '--purge') out.purge = true;
       else if (arg === '--symlink') out.symlink = true;
       else if (arg === '--no-credentials') out.noCredentials = true;
+      else if (arg === '--no-ui') out.noUi = true;
+      else if (arg === '--boring') out.boring = true;
       continue;
     }
     const eq = arg.indexOf('=');

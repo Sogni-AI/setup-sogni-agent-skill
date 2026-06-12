@@ -1,4 +1,4 @@
-import { spawnSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import kleur from 'kleur';
 
 const PKG = '@sogni-ai/sogni-creative-agent-skill';
@@ -29,20 +29,20 @@ function printPermissionHelp(spec) {
   console.error('');
 }
 
-export function installCli({ version = 'latest' } = {}) {
+// `quiet` pipes npm's stdout instead of inheriting it, so an animated spinner
+// can own the terminal while npm works; the captured output is replayed only
+// on failure. Async (spawn, not spawnSync) so the spinner's timer keeps firing.
+export async function installCli({ version = 'latest', quiet = false } = {}) {
   if (process.env.INSTALL_CLI === 'skip') {
     return { skipped: true, reason: 'INSTALL_CLI=skip' };
   }
   const spec = `${PKG}@${version}`;
-  const r = spawnSync('npm', ['install', '-g', spec], {
-    stdio: ['inherit', 'inherit', 'pipe'],
-    env: process.env,
-    encoding: 'utf8',
-  });
+  const r = await runNpm(['install', '-g', spec], { quiet });
   if (r.status !== 0) {
     if (r.error?.code === 'ENOENT') {
       throw new Error('npm not found on PATH. Install Node.js from https://nodejs.org and re-run.');
     }
+    if (quiet && r.stdout) process.stdout.write(r.stdout);
     const stderr = r.stderr ?? '';
     if (stderr) process.stderr.write(stderr);
     if (isPermissionError(stderr)) {
@@ -54,4 +54,19 @@ export function installCli({ version = 'latest' } = {}) {
     throw new Error(`npm install -g ${spec} failed with exit code ${r.status}.`);
   }
   return { skipped: false, spec };
+}
+
+function runNpm(args, { quiet }) {
+  return new Promise((resolve) => {
+    const child = spawn('npm', args, {
+      stdio: ['inherit', quiet ? 'pipe' : 'inherit', 'pipe'],
+      env: process.env,
+    });
+    let stdout = '';
+    let stderr = '';
+    child.stdout?.on('data', (d) => { stdout += d; });
+    child.stderr?.on('data', (d) => { stderr += d; });
+    child.on('error', (error) => resolve({ status: null, error, stdout, stderr }));
+    child.on('close', (status) => resolve({ status, stdout, stderr }));
+  });
 }

@@ -11,6 +11,7 @@ import { ensureCredentials } from './credentials.mjs';
 import { runPurge } from './purge.mjs';
 import { recommendFfmpeg } from './check-ffmpeg.mjs';
 import { printSummary } from './summary.mjs';
+import { uiEnabled, introSplash, LivePhase, finale, rainbowText } from './ui.mjs';
 
 const ADAPTERS = {
   'claude-code': { adapter: claudeCode, label: 'Claude Code', shortKey: 'claude' },
@@ -28,9 +29,9 @@ function filterByFlags(detections, { only, exclude }) {
   });
 }
 
-function printDetectionTable(filtered, version, { chatgptRequested = false } = {}) {
+function printDetectionTable(filtered, version, { chatgptRequested = false, fx = false } = {}) {
   console.log('');
-  console.log(kleur.bold('Detected runtimes:'));
+  console.log(fx ? rainbowText('Detected runtimes:', 160, { spread: 6 }) : kleur.bold('Detected runtimes:'));
   for (const d of filtered) {
     const meta = ADAPTERS[d.runtime];
     const path = d.path ?? 'manual setup';
@@ -67,6 +68,9 @@ export async function run(flags) {
     return runPurgeOnly(flags);
   }
 
+  const fx = uiEnabled(flags);
+  await introSplash({ enabled: fx });
+
   // 1. Install the global CLI (writes nothing else yet). A dry run must not
   // mutate the system either, so the global install is skipped too.
   let cli;
@@ -75,7 +79,16 @@ export async function run(flags) {
     cli = { skipped: true, reason: 'dry-run' };
   } else {
     console.log(kleur.bold(`Installing @sogni-ai/sogni-creative-agent-skill@${flags.version} globally...`));
-    cli = installCli({ version: flags.version });
+    const live = new LivePhase(fx);
+    live.start('npm is fetching the skill package…');
+    try {
+      cli = await installCli({ version: flags.version, quiet: fx });
+    } finally {
+      live.stop();
+    }
+    if (fx && !cli.skipped) {
+      console.log(`  ${kleur.green('✓')} installed ${cli.spec}`);
+    }
   }
 
   // 1b. Recommend ffmpeg (non-blocking) — used by clip merging and frame extraction.
@@ -102,7 +115,7 @@ export async function run(flags) {
     (flags.only && flags.only.includes('chatgpt')) || flags.outputChatgptBundle
   );
 
-  printDetectionTable(filtered, skill.version, { chatgptRequested });
+  printDetectionTable(filtered, skill.version, { chatgptRequested, fx });
 
   if (flags.dryRun) {
     console.log(kleur.cyan('Dry run — nothing will be written.'));
@@ -171,6 +184,7 @@ export async function run(flags) {
 
   // 6. Summary.
   printSummary({ adapterResults, cli, credentials });
+  if (failures === 0) await finale({ enabled: fx });
 
   return { cli, adapterResults, credentials, exitCode: failures > 0 ? failures : 0 };
 }
