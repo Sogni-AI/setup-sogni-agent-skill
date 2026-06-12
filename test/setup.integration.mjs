@@ -59,3 +59,44 @@ test('--dry-run prints detection table and writes nothing', (t) => {
   assert.equal(existsSync(join(home, '.claude/skills/sogni-creative-agent-skill')), false);
   assert.equal(existsSync(join(home, '.codex/skills/sogni-creative-agent-skill')), false);
 });
+
+function runSetup(args, home, npmRoot) {
+  return spawnSync(process.execPath, ['bin/setup.mjs', ...args], {
+    cwd: process.cwd(),
+    env: {
+      ...process.env,
+      HOME: home,
+      USERPROFILE: home,
+      INSTALL_CLI: 'skip',
+      SOGNI_TEST_NPM_ROOT: npmRoot,
+    },
+    encoding: 'utf8',
+  });
+}
+
+test('flagless run does not dump ChatGPT instructions, prints a pointer instead', (t) => {
+  const home = mkdtempSync(join(tmpdir(), 'sogni-int-home-'));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  const npmRoot = makeFakeNpmRoot();
+  t.after(() => rmSync(npmRoot, { recursive: true, force: true }));
+
+  const r = runSetup(['--yes', '--no-credentials'], home, npmRoot);
+  if (r.status !== 0) {
+    throw new Error(`exit ${r.status}\nstdout:\n${r.stdout}\nstderr:\n${r.stderr}`);
+  }
+  assert.doesNotMatch(r.stdout, /Custom GPT setup/, 'full instructions must not print without --only=chatgpt');
+  assert.match(r.stdout, /--only=chatgpt/, 'pointer to the explicit ChatGPT path expected');
+});
+
+test('--only=chatgpt prints the full Custom-GPT instructions', (t) => {
+  const home = mkdtempSync(join(tmpdir(), 'sogni-int-home-'));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  const npmRoot = makeFakeNpmRoot();
+  t.after(() => rmSync(npmRoot, { recursive: true, force: true }));
+
+  const r = runSetup(['--yes', '--no-credentials', '--only=chatgpt'], home, npmRoot);
+  if (r.status !== 0) {
+    throw new Error(`exit ${r.status}\nstdout:\n${r.stdout}\nstderr:\n${r.stderr}`);
+  }
+  assert.match(r.stdout, /Custom GPT setup/, 'explicit request must print the instructions');
+});

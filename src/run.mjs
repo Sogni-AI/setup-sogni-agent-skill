@@ -28,14 +28,14 @@ function filterByFlags(detections, { only, exclude }) {
   });
 }
 
-function printDetectionTable(filtered, version) {
+function printDetectionTable(filtered, version, { chatgptRequested = false } = {}) {
   console.log('');
   console.log(kleur.bold('Detected runtimes:'));
   for (const d of filtered) {
     const meta = ADAPTERS[d.runtime];
     const path = d.path ?? 'manual setup';
     const state = d.runtime === 'chatgpt-web'
-      ? 'instructions will be printed'
+      ? (chatgptRequested ? 'instructions will be printed' : 'instructions on request (--only=chatgpt)')
       : d.status === 'not-found'
         ? kleur.gray('not found')
         : d.installedVersion
@@ -82,7 +82,13 @@ export async function run(flags) {
   const filtered = filterByFlags(all, flags);
   const installable = filtered.filter(d => d.status === 'available');
 
-  printDetectionTable(filtered, skill.version);
+  // The full Custom-GPT instructions embed the entire SKILL.md — only dump
+  // them to the terminal when the user explicitly asked for the ChatGPT path.
+  const chatgptRequested = Boolean(
+    (flags.only && flags.only.includes('chatgpt')) || flags.outputChatgptBundle
+  );
+
+  printDetectionTable(filtered, skill.version, { chatgptRequested });
 
   if (flags.dryRun) {
     console.log(kleur.cyan('Dry run — nothing will be written.'));
@@ -90,7 +96,7 @@ export async function run(flags) {
   }
 
   if (installable.length === 0) {
-    console.log(kleur.yellow('No agent runtimes found. CLI still installed; ChatGPT instructions will print.'));
+    console.log(kleur.yellow('No agent runtimes found. CLI still installed; run --only=chatgpt for ChatGPT Custom-GPT instructions.'));
   } else if (!flags.yes) {
     const targets = installable.map(d => ADAPTERS[d.runtime].label).join(', ');
     if (!(await confirm(`Install / upgrade Sogni Creative Agent Skill into ${targets}?`))) {
@@ -115,7 +121,15 @@ export async function run(flags) {
       const r = meta.adapter.install(opts);
       if (d.runtime === 'chatgpt-web') {
         console.log('');
-        console.log(r.instructions);
+        if (flags.outputChatgptBundle && r.written.length > 0) {
+          console.log(kleur.green(`ChatGPT Custom-GPT instructions written to ${r.written[0]}`));
+        } else if (chatgptRequested) {
+          console.log(r.instructions);
+        } else {
+          console.log(kleur.gray(
+            'ChatGPT (web): instructions not printed. Run `npx setup-sogni-agent-skill --only=chatgpt` to print the Custom-GPT setup, or --output-chatgpt-bundle=<file> to save it.'
+          ));
+        }
       }
       adapterResults.push({
         runtime: d.runtime,

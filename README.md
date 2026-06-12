@@ -13,9 +13,11 @@ for your Sogni API key.
 ## Supports
 
 - **Claude Code** — installs into `~/.claude/skills/sogni-creative-agent-skill/`
-- **OpenAI Codex CLI** — installs into `~/.codex/skills/sogni-creative-agent-skill/`
+- **OpenAI Codex CLI** — installs into `~/.codex/skills/sogni-creative-agent-skill/` (upgrades preserve locally installed runtime dependencies)
 - **Hermes Agent** — installs into `~/.hermes/skills/<category>/sogni-creative-agent-skill/`
-- **ChatGPT (web)** — prints Custom GPT instructions for copy-paste
+- **ChatGPT (web)** — prints Custom GPT instructions on request: `--only=chatgpt` (or `--output-chatgpt-bundle=<file>` to save them)
+
+It does **not** configure OpenClaw — use `openclaw plugins install npm:@sogni-ai/sogni-creative-agent-skill` for that.
 
 ## Usage
 
@@ -28,6 +30,9 @@ npx setup-sogni-agent-skill --yes --no-credentials
 
 # Restrict to specific runtimes
 npx setup-sogni-agent-skill --only=claude,codex
+
+# Print ChatGPT Custom-GPT instructions (not printed by default)
+npx setup-sogni-agent-skill --only=chatgpt
 
 # Dry run
 npx setup-sogni-agent-skill --dry-run
@@ -74,7 +79,7 @@ it.
 
 ## Requirements
 
-- Node.js ≥ 22
+- Node.js ≥ 22.11.0 (same floor as the `sogni-agent` CLI)
 - `npm` on `$PATH`
 - A [Sogni API key](https://dashboard.sogni.ai)
 
