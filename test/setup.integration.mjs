@@ -100,3 +100,49 @@ test('--only=chatgpt prints the full Custom-GPT instructions', (t) => {
   }
   assert.match(r.stdout, /Custom GPT setup/, 'explicit request must print the instructions');
 });
+
+test('--dry-run skips the global CLI install entirely', (t) => {
+  const home = mkdtempSync(join(tmpdir(), 'sogni-int-home-'));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  const npmRoot = makeFakeNpmRoot();
+  t.after(() => rmSync(npmRoot, { recursive: true, force: true }));
+
+  // Shim npm onto PATH: any invocation writes a marker. Dry run must not call it.
+  const binDir = mkdtempSync(join(tmpdir(), 'sogni-int-bin-'));
+  t.after(() => rmSync(binDir, { recursive: true, force: true }));
+  const markerPath = join(binDir, 'npm-was-called');
+  writeFileSync(join(binDir, 'npm'), `#!/bin/sh\necho called > "${markerPath}"\nexit 0\n`, { mode: 0o755 });
+
+  const r = spawnSync(process.execPath, ['bin/setup.mjs', '--dry-run', '--yes', '--no-credentials'], {
+    cwd: process.cwd(),
+    env: {
+      ...process.env,
+      HOME: home,
+      USERPROFILE: home,
+      INSTALL_CLI: '', // make sure the env-var skip is NOT what saves us
+      SOGNI_TEST_NPM_ROOT: npmRoot,
+      PATH: `${binDir}:${process.env.PATH}`,
+    },
+    encoding: 'utf8',
+  });
+  if (r.status !== 0) {
+    throw new Error(`exit ${r.status}\nstdout:\n${r.stdout}\nstderr:\n${r.stderr}`);
+  }
+  assert.match(r.stdout, /skipping global CLI install/);
+  assert.equal(existsSync(markerPath), false, 'npm must not be invoked during --dry-run');
+});
+
+test('--dry-run still works when the skill package is not installed yet', (t) => {
+  const home = mkdtempSync(join(tmpdir(), 'sogni-int-home-'));
+  mkdirSync(join(home, '.claude'));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  const emptyRoot = mkdtempSync(join(tmpdir(), 'sogni-int-empty-root-'));
+  t.after(() => rmSync(emptyRoot, { recursive: true, force: true }));
+
+  const r = runSetup(['--dry-run', '--yes', '--no-credentials'], home, emptyRoot);
+  if (r.status !== 0) {
+    throw new Error(`exit ${r.status}\nstdout:\n${r.stdout}\nstderr:\n${r.stderr}`);
+  }
+  assert.match(r.stdout, /Detected runtimes:/);
+  assert.match(r.stdout, /Dry run/);
+});

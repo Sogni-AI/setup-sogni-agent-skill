@@ -67,15 +67,29 @@ export async function run(flags) {
     return runPurgeOnly(flags);
   }
 
-  // 1. Install the global CLI (writes nothing else yet).
-  console.log(kleur.bold(`Installing @sogni-ai/sogni-creative-agent-skill@${flags.version} globally...`));
-  const cli = installCli({ version: flags.version });
+  // 1. Install the global CLI (writes nothing else yet). A dry run must not
+  // mutate the system either, so the global install is skipped too.
+  let cli;
+  if (flags.dryRun) {
+    console.log(kleur.cyan(`Dry run — skipping global CLI install (would run: npm install -g @sogni-ai/sogni-creative-agent-skill@${flags.version}).`));
+    cli = { skipped: true, reason: 'dry-run' };
+  } else {
+    console.log(kleur.bold(`Installing @sogni-ai/sogni-creative-agent-skill@${flags.version} globally...`));
+    cli = installCli({ version: flags.version });
+  }
 
   // 1b. Recommend ffmpeg (non-blocking) — used by clip merging and frame extraction.
   recommendFfmpeg();
 
-  // 2. Resolve skill source on disk.
-  const skill = resolveSkillSource();
+  // 2. Resolve skill source on disk. Under --dry-run the package may not be
+  // installed globally yet — fall back to the requested version for display.
+  let skill;
+  try {
+    skill = resolveSkillSource();
+  } catch (err) {
+    if (!flags.dryRun) throw err;
+    skill = { srcDir: null, version: flags.version };
+  }
 
   // 3. Detect runtimes and filter.
   const all = detectAll();

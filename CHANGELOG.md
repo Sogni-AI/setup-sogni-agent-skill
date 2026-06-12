@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.1
+
+### Fixed
+
+- **`--dry-run` no longer installs the global CLI.** The step-1 `npm install -g`
+  ran before the dry-run gate, so a "preview" mutated the system. Dry runs now
+  skip the install (printing what would run) and fall back to the requested
+  version for the detection table when the package is not installed yet.
+
 ## 0.4.0
 
 ### Fixed
