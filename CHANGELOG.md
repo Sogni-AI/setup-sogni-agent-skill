@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.5.2
+
+### Fixed
+
+- Codex installs now copy the `references/` deep-dive guides and the `skills/`
+  per-skill index into `~/.codex/skills/sogni-creative-agent-skill/`. The Codex
+  adapter claimed to mirror the package `files` whitelist but silently dropped
+  both directories, so agents could not open the files `SKILL.md` tells them to
+  read "before acting" and fell back to `sogni-agent --help`.
+- The Codex copy now also includes `update-check.mjs` and
+  `node-version-check.mjs`, which `sogni-agent.mjs` imports — without them the
+  copied CLI could not load if invoked directly.
+
 ## 0.5.1
 
 ### Fixed

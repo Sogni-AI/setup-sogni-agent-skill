@@ -9,11 +9,16 @@ test('install copies full package layout into ~/.codex/skills/', (t) => {
   const home = withTempHome(t);
   adapter.install({ srcDir: FIXTURE_SKILL_SRC, version: '2.3.0' });
   const skillDir = join(home, '.codex/skills/sogni-creative-agent-skill');
-  for (const file of ['SKILL.md', 'llm.txt', 'version.mjs', 'skill-package.json', 'env.mjs', 'ssrf-guard.mjs', 'sogni-agent.mjs', 'openclaw-plugin.mjs', 'openclaw.plugin.json']) {
+  for (const file of ['SKILL.md', 'llm.txt', 'version.mjs', 'skill-package.json', 'env.mjs', 'ssrf-guard.mjs', 'update-check.mjs', 'node-version-check.mjs', 'sogni-agent.mjs', 'openclaw-plugin.mjs', 'openclaw.plugin.json']) {
     assert.ok(existsSync(join(skillDir, file)), `expected ${file} to exist`);
   }
   assert.ok(existsSync(join(skillDir, 'scripts/check-creative-agent-runtime.mjs')));
   assert.ok(existsSync(join(skillDir, 'generated/creative-agent-runtime.mjs')));
+  // SKILL.md points agents at references/ and skills/ "before acting" — without
+  // them the agent can't read the guides and falls back to `--help` (Codex bug fix).
+  assert.ok(existsSync(join(skillDir, 'references/models.md')), 'expected references/ deep-dive guides to be copied');
+  assert.ok(existsSync(join(skillDir, 'references/video-prompting.md')), 'expected references/ deep-dive guides to be copied');
+  assert.ok(existsSync(join(skillDir, 'skills/README.md')), 'expected skills/ per-skill index to be copied');
   const marker = JSON.parse(readFileSync(join(skillDir, '.sogni-installed.json'), 'utf8'));
   assert.equal(marker.version, '2.3.0');
   assert.equal(marker.adapter, 'codex-cli');

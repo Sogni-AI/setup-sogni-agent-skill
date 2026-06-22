@@ -6,7 +6,12 @@ import { writeMarker, readMarker } from './shared.mjs';
 
 const SKILL_NAME = 'sogni-creative-agent-skill';
 
-// Mirrors the main package.json `files` whitelist (minus README/LICENSE which Codex doesn't need).
+// Mirrors the main package.json `files` whitelist (minus README/LICENSE/CHANGELOG,
+// which Codex doesn't need). `references` and `skills` carry the SKILL.md
+// "read before acting" deep-dive guides — without them the agent can't open the
+// files SKILL.md points at and falls back to `--help`. `update-check.mjs` and
+// `node-version-check.mjs` are imported by sogni-agent.mjs, so the copied CLI
+// can't even load without them.
 const ENTRIES_TO_COPY = [
   'SKILL.md',
   'llm.txt',
@@ -14,9 +19,13 @@ const ENTRIES_TO_COPY = [
   'skill-package.json',
   'env.mjs',
   'ssrf-guard.mjs',
+  'update-check.mjs',
+  'node-version-check.mjs',
   'sogni-agent.mjs',
   'openclaw-plugin.mjs',
   'openclaw.plugin.json',
+  'references',
+  'skills',
   'scripts',
   'generated',
 ];

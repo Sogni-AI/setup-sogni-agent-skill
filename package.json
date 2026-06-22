@@ -1,6 +1,6 @@
 {
   "name": "setup-sogni-agent-skill",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "One-command installer that registers the Sogni Creative Agent Skill into detected local agent runtimes and provides ChatGPT Custom-GPT instructions on request.",
   "type": "module",
   "bin": {
