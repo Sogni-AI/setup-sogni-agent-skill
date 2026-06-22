@@ -5,13 +5,14 @@ import codexCli from './adapters/codex-cli.mjs';
 import hermes from './adapters/hermes.mjs';
 import chatgptWeb from './adapters/chatgpt-web.mjs';
 import { detectAll } from './detect.mjs';
-import { installCli } from './install-cli.mjs';
+import { formatElevatedSetupCommand, installCli, isPermissionError } from './install-cli.mjs';
 import { resolveSkillSource } from './resolve-skill.mjs';
 import { ensureCredentials } from './credentials.mjs';
 import { runPurge } from './purge.mjs';
 import { recommendFfmpeg } from './check-ffmpeg.mjs';
 import { printSummary } from './summary.mjs';
 import { uiEnabled, introSplash, LivePhase, finale, rainbowText } from './ui.mjs';
+import { dropSudoPrivilegesForUser, isSudoRoot } from './sudo.mjs';
 
 const ADAPTERS = {
   'claude-code': { adapter: claudeCode, label: 'Claude Code', shortKey: 'claude' },
@@ -60,6 +61,24 @@ async function confirm(message, { defaultYes = true } = {}) {
   return ok === true;
 }
 
+function dropSudoForUserFiles() {
+  const sudoDrop = dropSudoPrivilegesForUser();
+  if (sudoDrop.dropped) {
+    console.log(kleur.gray(`Continuing setup as ${sudoDrop.user} in ${sudoDrop.home}.`));
+  }
+  return sudoDrop;
+}
+
+function selectedLocalRuntimes(filtered) {
+  return filtered.filter(d => d.runtime !== 'chatgpt-web' && d.status === 'available');
+}
+
+function isChatgptRequested(flags) {
+  return Boolean(
+    (flags.only && flags.only.includes('chatgpt')) || flags.outputChatgptBundle
+  );
+}
+
 export async function run(flags) {
   if (flags.uninstall) {
     return runUninstall(flags);
@@ -71,9 +90,22 @@ export async function run(flags) {
   const fx = uiEnabled(flags);
   await introSplash({ enabled: fx });
 
+  const preflightChatgptRequested = isChatgptRequested(flags);
+  if (!flags.dryRun && !isSudoRoot() && flags.only && !preflightChatgptRequested) {
+    const preflightFiltered = filterByFlags(detectAll(), flags);
+    if (selectedLocalRuntimes(preflightFiltered).length === 0) {
+      printDetectionTable(preflightFiltered, flags.version, { chatgptRequested: false, fx });
+      console.log(kleur.yellow('No selected local agent runtimes found. Nothing was installed.'));
+      console.log('Run the target agent once so it creates its config directory, then re-run this command.');
+      console.log('For ChatGPT Custom-GPT instructions instead, run `npx setup-sogni-agent-skill --only=chatgpt`.');
+      return { cli: null, adapterResults: [], credentials: null, exitCode: 1 };
+    }
+  }
+
   // 1. Install the global CLI (writes nothing else yet). A dry run must not
   // mutate the system either, so the global install is skipped too.
   let cli;
+  let elevatedSkill = null;
   if (flags.dryRun) {
     console.log(kleur.cyan(`Dry run — skipping global CLI install (would run: npm install -g @sogni-ai/sogni-creative-agent-skill@${flags.version}).`));
     cli = { skipped: true, reason: 'dry-run' };
@@ -89,7 +121,12 @@ export async function run(flags) {
     if (fx && !cli.skipped) {
       console.log(`  ${kleur.green('✓')} installed ${cli.spec}`);
     }
+    if (!cli.skipped && isSudoRoot()) {
+      elevatedSkill = resolveSkillSource();
+    }
   }
+
+  dropSudoForUserFiles();
 
   // 1b. Recommend ffmpeg (non-blocking) — used by clip merging and frame extraction.
   recommendFfmpeg();
@@ -97,23 +134,30 @@ export async function run(flags) {
   // 2. Resolve skill source on disk. Under --dry-run the package may not be
   // installed globally yet — fall back to the requested version for display.
   let skill;
-  try {
-    skill = resolveSkillSource();
-  } catch (err) {
-    if (!flags.dryRun) throw err;
-    skill = { srcDir: null, version: flags.version };
+  if (elevatedSkill) {
+    skill = elevatedSkill;
+  } else {
+    try {
+      skill = resolveSkillSource();
+    } catch (err) {
+      if (!flags.dryRun) throw err;
+      skill = { srcDir: null, version: flags.version };
+    }
   }
 
   // 3. Detect runtimes and filter.
   const all = detectAll();
   const filtered = filterByFlags(all, flags);
-  const installable = filtered.filter(d => d.status === 'available');
 
   // The full Custom-GPT instructions embed the entire SKILL.md — only dump
   // them to the terminal when the user explicitly asked for the ChatGPT path.
-  const chatgptRequested = Boolean(
-    (flags.only && flags.only.includes('chatgpt')) || flags.outputChatgptBundle
-  );
+  const chatgptRequested = isChatgptRequested(flags);
+  const localInstallable = selectedLocalRuntimes(filtered);
+  const chatgptTarget = filtered.find(d => d.runtime === 'chatgpt-web');
+  const adapterTargets = [
+    ...localInstallable,
+    ...(chatgptTarget && chatgptRequested ? [chatgptTarget] : []),
+  ];
 
   printDetectionTable(filtered, skill.version, { chatgptRequested, fx });
 
@@ -122,10 +166,11 @@ export async function run(flags) {
     return { cli, adapterResults: [], credentials: null, exitCode: 0 };
   }
 
-  if (installable.length === 0) {
-    console.log(kleur.yellow('No agent runtimes found. CLI still installed; run --only=chatgpt for ChatGPT Custom-GPT instructions.'));
-  } else if (!flags.yes) {
-    const targets = installable.map(d => ADAPTERS[d.runtime].label).join(', ');
+  if (localInstallable.length === 0 && !chatgptRequested) {
+    const scoped = flags.only ? 'No selected local agent runtimes found.' : 'No local agent runtimes found.';
+    console.log(kleur.yellow(`${scoped} CLI still installed; run --only=chatgpt for ChatGPT Custom-GPT instructions.`));
+  } else if (localInstallable.length > 0 && !flags.yes) {
+    const targets = localInstallable.map(d => ADAPTERS[d.runtime].label).join(', ');
     if (!(await confirm(`Install / upgrade Sogni Creative Agent Skill into ${targets}?`))) {
       console.log('Aborted.');
       return { cli, adapterResults: [], credentials: null, exitCode: 1 };
@@ -135,7 +180,7 @@ export async function run(flags) {
   // 4. Run adapters.
   const adapterResults = [];
   let failures = 0;
-  for (const d of filtered) {
+  for (const d of adapterTargets) {
     const meta = ADAPTERS[d.runtime];
     try {
       const opts = {
@@ -180,7 +225,9 @@ export async function run(flags) {
   }
 
   // 5. Credentials.
-  const credentials = await ensureCredentials({ skipPrompt: flags.noCredentials });
+  const credentials = localInstallable.length === 0 && chatgptRequested
+    ? { action: 'skipped-chatgpt' }
+    : await ensureCredentials({ skipPrompt: flags.noCredentials });
 
   // 6. Summary.
   printSummary({ adapterResults, cli, credentials });
@@ -190,12 +237,47 @@ export async function run(flags) {
 }
 
 async function runPurgeOnly(flags) {
+  dropSudoForUserFiles();
   const purge = await runPurge({ yes: flags.yes, dryRun: flags.dryRun });
   printSummary({ adapterResults: [], cli: null, credentials: null, purge });
   return { exitCode: purge.status === 'failed' ? 1 : 0 };
 }
 
+async function removeGlobalCli() {
+  console.log('Removing global CLI...');
+  const { spawnSync } = await import('node:child_process');
+  const r = spawnSync('npm', ['uninstall', '-g', '@sogni-ai/sogni-creative-agent-skill'], {
+    encoding: 'utf8',
+    stdio: ['inherit', 'inherit', 'pipe'],
+  });
+  if (r.error?.code === 'ENOENT') {
+    throw new Error('npm not found on PATH. Install Node.js from https://nodejs.org and re-run.');
+  }
+  if (r.status !== 0) {
+    const stderr = r.stderr ?? '';
+    if (stderr) process.stderr.write(stderr);
+    if (isPermissionError(stderr)) {
+      console.error('');
+      console.error(kleur.red().bold('Could not remove the global CLI — npm needs admin rights.'));
+      console.error('');
+      console.error('Re-run the same uninstall command with admin rights:');
+      console.error(`  ${kleur.gray('$')} ${formatElevatedSetupCommand(process.argv.slice(2))}`);
+      console.error('');
+      const err = new Error('npm uninstall -g @sogni-ai/sogni-creative-agent-skill failed: permission denied. See instructions above.');
+      err.kind = 'permission';
+      throw err;
+    }
+    throw new Error(`npm uninstall -g @sogni-ai/sogni-creative-agent-skill failed with exit code ${r.status}.`);
+  }
+}
+
 async function runUninstall(flags) {
+  if (flags.removeCli) {
+    await removeGlobalCli();
+  }
+
+  dropSudoForUserFiles();
+
   const all = detectAll();
   const filtered = filterByFlags(all, flags);
   const results = [];
@@ -208,11 +290,6 @@ async function runUninstall(flags) {
       status: r.removed.length > 0 ? 'removed' : 'skipped',
       target: r.removed[0] ?? '',
     });
-  }
-  if (flags.removeCli) {
-    console.log('Removing global CLI...');
-    const { spawnSync } = await import('node:child_process');
-    spawnSync('npm', ['uninstall', '-g', '@sogni-ai/sogni-creative-agent-skill'], { stdio: 'inherit' });
   }
   let purge = null;
   if (flags.purge) {

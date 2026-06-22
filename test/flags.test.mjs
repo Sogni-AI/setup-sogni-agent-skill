@@ -8,7 +8,6 @@ test('parses empty argv', () => {
   assert.equal(flags.dryRun, false);
   assert.equal(flags.uninstall, false);
   assert.equal(flags.removeCli, false);
-  assert.equal(flags.symlink, false);
   assert.equal(flags.noCredentials, false);
   assert.equal(flags.version, 'latest');
   assert.equal(flags.hermesCategory, 'media');
@@ -26,12 +25,41 @@ test('parses --only as comma list', () => {
   assert.deepEqual(parseFlags(['--only=claude,codex']).only, ['claude', 'codex']);
 });
 
+test('rejects invalid --only runtime names', () => {
+  assert.throws(() => parseFlags(['--only=codez']), /Invalid runtime for --only: codez/);
+});
+
+test('rejects empty --only runtime list', () => {
+  assert.throws(() => parseFlags(['--only=']), /--only must list at least one runtime/);
+});
+
 test('parses --exclude as comma list', () => {
   assert.deepEqual(parseFlags(['--exclude=chatgpt']).exclude, ['chatgpt']);
 });
 
+test('rejects invalid --exclude runtime names', () => {
+  assert.throws(() => parseFlags(['--exclude=claude,openclaw']), /Invalid runtime for --exclude: openclaw/);
+});
+
+test('rejects filter combinations that select no runtimes', () => {
+  assert.throws(
+    () => parseFlags(['--only=codex', '--exclude=codex']),
+    /No runtimes selected/
+  );
+  assert.throws(
+    () => parseFlags(['--exclude=claude,codex,hermes,chatgpt']),
+    /No runtimes selected/
+  );
+});
+
 test('parses --version=X.Y.Z', () => {
   assert.equal(parseFlags(['--version=2.3.0']).version, '2.3.0');
+});
+
+test('rejects blank value flags', () => {
+  assert.throws(() => parseFlags(['--version=']), /--version requires a value/);
+  assert.throws(() => parseFlags(['--hermes-category=']), /--hermes-category requires a value/);
+  assert.throws(() => parseFlags(['--output-chatgpt-bundle=']), /--output-chatgpt-bundle requires a value/);
 });
 
 test('parses --hermes-category=', () => {
@@ -42,17 +70,20 @@ test('parses --output-chatgpt-bundle=path', () => {
   assert.equal(parseFlags(['--output-chatgpt-bundle=/tmp/x.md']).outputChatgptBundle, '/tmp/x.md');
 });
 
-test('parses --dry-run, --uninstall, --remove-cli, --symlink, --no-credentials', () => {
-  const f = parseFlags(['--dry-run', '--uninstall', '--remove-cli', '--symlink', '--no-credentials']);
+test('parses --dry-run, --uninstall, --remove-cli, --no-credentials', () => {
+  const f = parseFlags(['--dry-run', '--uninstall', '--remove-cli', '--no-credentials']);
   assert.equal(f.dryRun, true);
   assert.equal(f.uninstall, true);
   assert.equal(f.removeCli, true);
-  assert.equal(f.symlink, true);
   assert.equal(f.noCredentials, true);
 });
 
 test('rejects unknown flags', () => {
   assert.throws(() => parseFlags(['--bogus']), /Unknown flag/);
+});
+
+test('rejects removed --symlink flag instead of silently copying', () => {
+  assert.throws(() => parseFlags(['--symlink']), /Unknown flag: --symlink/);
 });
 
 test('parses --no-ui and --boring, defaulting to false', () => {

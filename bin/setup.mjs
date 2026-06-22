@@ -12,10 +12,10 @@ Options:
   --dry-run                       Detect + print plan, do not write
   --only=claude,codex,hermes,chatgpt
                                   Restrict to listed runtimes
+                                  Local targets must already have config dirs
   --exclude=chatgpt               Exclude listed runtimes
   --version=X.Y.Z                 Pin the skill package version (default: latest)
   --hermes-category=NAME          Hermes category directory (default: media)
-  --symlink                       (Unix) Symlink rather than copy where supported
   --no-credentials                Skip the API key prompt
   --output-chatgpt-bundle=PATH    Also write Custom-GPT instructions to a file
   --uninstall                     Remove previously installed skill files
@@ -50,7 +50,7 @@ try {
   process.exit(exitCode);
 } catch (err) {
   if (err.kind === 'permission') {
-    // installCli already printed a friendly, formatted explanation.
+    // The failing npm operation already printed a friendly, formatted explanation.
     process.exit(1);
   }
   console.error('setup-sogni-agent-skill failed:', err.message);

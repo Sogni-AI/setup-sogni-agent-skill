@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import { platform as osPlatform } from 'node:os';
 import kleur from 'kleur';
 
 const PKG = '@sogni-ai/sogni-creative-agent-skill';
@@ -8,7 +9,23 @@ export function isPermissionError(stderr) {
   return /\bEACCES\b|\bEPERM\b|permission denied|Permission denied|operation not permitted/i.test(stderr);
 }
 
-function printPermissionHelp(spec) {
+function shellQuote(value) {
+  const s = String(value);
+  if (/^[A-Za-z0-9_@%+=:,./-]+$/.test(s)) return s;
+  return `'${s.replace(/'/g, "'\\''")}'`;
+}
+
+export function formatSetupCommand(argv = process.argv.slice(2), { sudo = false } = {}) {
+  const args = argv.map(shellQuote).join(' ');
+  return `${sudo ? 'sudo ' : ''}npx setup-sogni-agent-skill${args ? ` ${args}` : ''}`;
+}
+
+export function formatElevatedSetupCommand(argv = process.argv.slice(2), { platform = osPlatform() } = {}) {
+  return formatSetupCommand(argv, { sudo: platform !== 'win32' });
+}
+
+function printPermissionHelp({ argv = process.argv.slice(2), platform = osPlatform() } = {}) {
+  const isWindows = platform === 'win32';
   console.error('');
   console.error(kleur.red().bold('Could not install — your computer blocked the install.'));
   console.error('');
@@ -16,16 +33,20 @@ function printPermissionHelp(spec) {
   console.error('');
   console.error(kleur.bold('You have two ways to fix this:'));
   console.error('');
-  console.error(kleur.cyan('  1) Quick fix — install once with admin rights'));
-  console.error(`     ${kleur.gray('$')} sudo npm install -g ${spec}`);
-  console.error('     You will be asked for your computer password. This is the simplest option.');
+  console.error(kleur.cyan('  1) Quick fix — rerun this setup with admin rights'));
+  if (isWindows) {
+    console.error('     Open a new terminal as Administrator, then run:');
+  }
+  console.error(`     ${kleur.gray('$')} ${formatElevatedSetupCommand(argv, { platform })}`);
+  console.error(`     You will be asked for ${isWindows ? 'admin approval' : 'your computer password'}. The installer will still`);
+  console.error('     detect your agents and prompt for your Sogni API key in this same flow.');
   console.error('');
   console.error(kleur.cyan('  2) Permanent fix — let npm install to your own folder'));
   console.error('     (recommended if you install npm packages often)');
   console.error('     Follow the official Node.js guide:');
   console.error('     https://docs.npmjs.com/resolving-eacces-permissions-errors-when-installing-packages-globally');
   console.error('     After that, re-run:');
-  console.error(`     ${kleur.gray('$')} npx setup-sogni-agent-skill`);
+  console.error(`     ${kleur.gray('$')} ${formatSetupCommand(argv)}`);
   console.error('');
 }
 
@@ -46,7 +67,7 @@ export async function installCli({ version = 'latest', quiet = false } = {}) {
     const stderr = r.stderr ?? '';
     if (stderr) process.stderr.write(stderr);
     if (isPermissionError(stderr)) {
-      printPermissionHelp(spec);
+      printPermissionHelp();
       const err = new Error(`npm install -g ${spec} failed: permission denied. See instructions above.`);
       err.kind = 'permission';
       throw err;

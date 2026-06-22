@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { isPermissionError } from '../src/install-cli.mjs';
+import { formatElevatedSetupCommand, formatSetupCommand, isPermissionError } from '../src/install-cli.mjs';
 
 test('isPermissionError matches EACCES output', () => {
   const sample = `npm error code EACCES
@@ -27,4 +27,29 @@ test('isPermissionError returns false on empty input', () => {
   assert.equal(isPermissionError(''), false);
   assert.equal(isPermissionError(undefined), false);
   assert.equal(isPermissionError(null), false);
+});
+
+test('formatSetupCommand preserves flags when suggesting sudo rerun', () => {
+  assert.equal(
+    formatSetupCommand(['--only=codex', '--version=2.3.0'], { sudo: true }),
+    'sudo npx setup-sogni-agent-skill --only=codex --version=2.3.0'
+  );
+});
+
+test('formatSetupCommand shell-quotes unsafe flag values', () => {
+  assert.equal(
+    formatSetupCommand(['--output-chatgpt-bundle=/tmp/my bundle.txt'], { sudo: true }),
+    "sudo npx setup-sogni-agent-skill '--output-chatgpt-bundle=/tmp/my bundle.txt'"
+  );
+});
+
+test('formatElevatedSetupCommand uses Administrator-terminal style on Windows', () => {
+  assert.equal(
+    formatElevatedSetupCommand(['--only=codex'], { platform: 'win32' }),
+    'npx setup-sogni-agent-skill --only=codex'
+  );
+  assert.equal(
+    formatElevatedSetupCommand(['--only=codex'], { platform: 'darwin' }),
+    'sudo npx setup-sogni-agent-skill --only=codex'
+  );
 });

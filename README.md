@@ -7,8 +7,8 @@ npx setup-sogni-agent-skill
 ```
 
 Detects which agent runtimes you have installed, installs the `sogni-agent`
-CLI globally, registers `SKILL.md` into each detected runtime, and prompts
-for your Sogni API key.
+CLI globally, registers `SKILL.md` into each detected local runtime, and prompts
+for your Sogni API key when local CLI use needs one.
 
 ## Supports
 
@@ -31,7 +31,7 @@ npx setup-sogni-agent-skill --yes --no-credentials
 # Restrict to specific runtimes
 npx setup-sogni-agent-skill --only=claude,codex
 
-# Print ChatGPT Custom-GPT instructions (not printed by default)
+# Print ChatGPT Custom-GPT instructions (not printed by default; no local API-key file needed)
 npx setup-sogni-agent-skill --only=chatgpt
 
 # Dry run
@@ -50,10 +50,36 @@ npx setup-sogni-agent-skill --no-ui
 
 Run `npx setup-sogni-agent-skill --help` for the full flag list.
 
+When using `--only`, start the target agent at least once first so its config
+directory exists (`~/.claude`, `~/.codex`, or `~/.hermes`). If none of the
+selected local runtimes are detected, setup exits before installing anything.
+
 Interactive runs open with an animated SOGNI banner, show a spinner while npm
 works, and end with a starburst. The animations are pure ANSI (no extra
 dependencies) and switch themselves off when output is piped, when `NO_COLOR`
 is set, or with `--no-ui` / `--boring`.
+
+### If npm asks for admin access
+
+Some Node.js installs require admin rights for global packages. If setup stops
+with an `EACCES` or permission error, rerun the same setup command with admin
+rights.
+
+On macOS or Linux:
+
+```bash
+sudo npx setup-sogni-agent-skill
+```
+
+On Windows, open a new terminal as Administrator and run:
+
+```bash
+npx setup-sogni-agent-skill
+```
+
+Keep any flags you used on the first run. The elevated rerun uses admin rights
+for the global npm install, then continues as your user so runtime detection and
+API key setup still target your home directory on macOS and Linux.
 
 ### Complete uninstall (remove your data too)
 
@@ -93,12 +119,14 @@ it.
 
 ## How it works
 
-1. Runs `npm install -g @sogni-ai/sogni-creative-agent-skill@latest`.
-2. Resolves the global install path via `npm root -g`.
-3. Detects `~/.claude/`, `~/.codex/`, `~/.hermes/`; treats ChatGPT (web) as always available (manual setup).
-4. For each runtime, dispatches to a per-runtime adapter that knows that runtime's directory convention.
-5. Writes a marker file (`.sogni-installed.json`) so re-runs upgrade in place.
-6. Prompts for your Sogni API key (unless `SOGNI_API_KEY` is set or `~/.config/sogni/credentials` already exists).
+1. For explicit local-only runs like `--only=codex`, first checks that at least one selected local runtime is detected.
+2. Runs `npm install -g @sogni-ai/sogni-creative-agent-skill@latest`.
+3. Resolves the global install path via `npm root -g`.
+4. If started with `sudo`, drops back to the original user before touching files in your home directory.
+5. Detects `~/.claude/`, `~/.codex/`, `~/.hermes/`; treats ChatGPT (web) as always available (manual setup).
+6. For each detected local runtime, dispatches to a per-runtime adapter that knows that runtime's directory convention.
+7. Writes a marker file (`.sogni-installed.json`) so re-runs upgrade in place.
+8. Prompts for your Sogni API key when local CLI use needs one (unless `SOGNI_API_KEY` is set or `~/.config/sogni/credentials` already exists). ChatGPT-only setup skips this local credentials step.
 
 ## License
 

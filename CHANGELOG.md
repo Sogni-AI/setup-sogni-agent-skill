@@ -1,5 +1,45 @@
 # Changelog
 
+## 0.5.1
+
+### Fixed
+
+- Permission-denied global npm installs now tell users to rerun the same
+  `npx setup-sogni-agent-skill` command with elevation, preserving flags,
+  instead of sending them through a standalone `sudo npm install -g` step.
+  macOS/Linux users see a `sudo npx ...` command; Windows users are told to
+  rerun from an Administrator terminal. Sudo reruns resolve the elevated global
+  install path, then drop back to the original user before runtime detection,
+  skill writes, purge checks, or API-key setup.
+- `--uninstall --remove-cli` now checks whether `npm uninstall -g` succeeded.
+  If npm needs admin rights, setup stops before removing user skill files or
+  data and prints the elevated rerun command instead of reporting a misleading
+  success.
+- Removed the advertised `--symlink` flag because no adapter implemented it.
+  Passing it now fails clearly instead of silently doing a copy-based install.
+- Runtime filters and value flags are now validated before setup starts, so
+  typos like `--only=codez` or blanks like `--version=` fail immediately instead
+  of installing the CLI and then producing a confusing no-target run.
+- Filter combinations that select no runtimes, such as
+  `--only=codex --exclude=codex`, now fail during argument parsing with a direct
+  explanation.
+- Setup now installs skill files only into detected local runtimes. Missing
+  `~/.claude`, `~/.codex`, or `~/.hermes` directories are no longer created just
+  because those runtimes appeared in the detection table.
+- `--only=chatgpt` now skips the local credentials prompt because ChatGPT Custom
+  GPT setup uses API credentials inside ChatGPT Actions, not
+  `~/.config/sogni/credentials`.
+- Flagless setup no longer reports ChatGPT instructions as "printed" in the
+  summary when it only showed the `--only=chatgpt` pointer.
+- The npm package description now says ChatGPT Custom-GPT instructions are
+  available on request instead of implying the default run prints them.
+- Summary next steps now match the operation: uninstall and purge runs no longer
+  tell users to try `sogni-agent`, and ChatGPT-only runs point users back to the
+  Custom-GPT editor instead of local CLI usage.
+- Explicit local-only runs such as `--only=codex` now preflight target detection
+  before `npm install -g`. If the selected local runtime has not created its
+  config directory yet, setup exits without installing anything.
+
 ## 0.5.0
 
 ### Features
