@@ -23,7 +23,11 @@ const ADAPTERS = {
 
 function filterByFlags(detections, { only, exclude }) {
   return detections.filter(d => {
-    const key = ADAPTERS[d.runtime].shortKey;
+    const meta = ADAPTERS[d.runtime];
+    // Runtimes can be detected before their adapter is registered (e.g. new
+    // runtimes land detection-first); skip them rather than crash.
+    if (!meta) return false;
+    const key = meta.shortKey;
     if (only && !only.includes(key)) return false;
     if (exclude && exclude.includes(key)) return false;
     return true;
