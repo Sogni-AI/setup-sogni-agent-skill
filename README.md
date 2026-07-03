@@ -13,6 +13,7 @@ for your Sogni API key when local CLI use needs one.
 ## Supports
 
 - **Claude Code** — installs into `~/.claude/skills/sogni-creative-agent-skill/`
+- **Claude Desktop** — registers a local MCP server entry in `claude_desktop_config.json` pointing at the globally installed CLI (requires skill package ≥ 3.7.0). Fully quit and reopen Claude Desktop after install. Restrict with `--only=desktop`.
 - **OpenAI Codex CLI** — installs into `~/.codex/skills/sogni-creative-agent-skill/` (upgrades preserve locally installed runtime dependencies)
 - **Hermes Agent** — installs into `~/.hermes/skills/<category>/sogni-creative-agent-skill/`
 - **ChatGPT (web)** — prints Custom GPT instructions on request: `--only=chatgpt` (or `--output-chatgpt-bundle=<file>` to save them)
@@ -29,7 +30,7 @@ npx setup-sogni-agent-skill
 npx setup-sogni-agent-skill --yes --no-credentials
 
 # Restrict to specific runtimes
-npx setup-sogni-agent-skill --only=claude,codex
+npx setup-sogni-agent-skill --only=claude,desktop,codex
 
 # Print ChatGPT Custom-GPT instructions (not printed by default; no local API-key file needed)
 npx setup-sogni-agent-skill --only=chatgpt
@@ -116,6 +117,11 @@ it.
 - Node.js ≥ 22.11.0 (same floor as the `sogni-agent` CLI)
 - `npm` on `$PATH`
 - A [Sogni API key](https://dashboard.sogni.ai)
+- Optional: **ffmpeg**, used by video/audio features (stitching clips,
+  extracting frames, adding music). When it's missing, interactive setup offers
+  to install it via your system package manager (Homebrew / winget / apt / dnf /
+  pacman); otherwise it prints manual instructions. It is never installed
+  automatically under `--yes`, `sudo`, or a non-interactive shell.
 
 ## How it works
 
@@ -123,7 +129,7 @@ it.
 2. Runs `npm install -g @sogni-ai/sogni-creative-agent-skill@latest`.
 3. Resolves the global install path via `npm root -g`.
 4. If started with `sudo`, drops back to the original user before touching files in your home directory.
-5. Detects `~/.claude/`, `~/.codex/`, `~/.hermes/`; treats ChatGPT (web) as always available (manual setup).
+5. Detects `~/.claude/`, `~/.codex/`, `~/.hermes/`, and the Claude Desktop config file (`claude_desktop_config.json`); treats ChatGPT (web) as always available (manual setup).
 6. For each detected local runtime, dispatches to a per-runtime adapter that knows that runtime's directory convention.
 7. Writes a marker file (`.sogni-installed.json`) so re-runs upgrade in place.
 8. Prompts for your Sogni API key when local CLI use needs one (unless `SOGNI_API_KEY` is set or `~/.config/sogni/credentials` already exists). ChatGPT-only setup skips this local credentials step.

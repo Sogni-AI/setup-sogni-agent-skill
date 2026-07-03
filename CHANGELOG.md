@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.6.0
+
+### Features
+
+- **Claude Desktop runtime.** Setup now detects Claude Desktop and registers a
+  local MCP server entry (`mcpServers['sogni-creative-agent']`) in
+  `claude_desktop_config.json` that points at the globally installed CLI, so the
+  Sogni tools load inside the desktop app. Requires skill package ≥ 3.7.0 (which
+  ships `desktop-extension/`). Restrict to it with `--only=desktop`; fully quit
+  and reopen Claude Desktop after install so it loads the tools.
+- **Interactive ffmpeg install offer.** When ffmpeg is missing, interactive
+  installs now offer to install it for you via the detected system package
+  manager (Homebrew / winget / apt / dnf / pacman) instead of only printing
+  manual instructions. It never runs under `--yes`, `sudo`, or a non-interactive
+  shell — those still fall back to the printed recommendation.
+
+### Changed
+
+- The runtime detection table now lists Claude Desktop alongside Claude Code,
+  Codex, Hermes, and ChatGPT.
+
 ## 0.5.2
 
 ### Fixed
