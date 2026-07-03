@@ -81,7 +81,7 @@ test('--help notes that local --only targets must already exist', () => {
   });
 
   assert.equal(r.status, 0);
-  assert.match(r.stdout, /--only=claude,codex,hermes,chatgpt/);
+  assert.match(r.stdout, /--only=claude,desktop,codex,hermes,chatgpt/);
   assert.match(r.stdout, /Local targets must already have config dirs/);
 });
 

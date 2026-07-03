@@ -10,7 +10,7 @@ Usage:
 Options:
   --yes, -y                       Skip confirmation prompts
   --dry-run                       Detect + print plan, do not write
-  --only=claude,codex,hermes,chatgpt
+  --only=claude,desktop,codex,hermes,chatgpt
                                   Restrict to listed runtimes
                                   Local targets must already have config dirs
   --exclude=chatgpt               Exclude listed runtimes
