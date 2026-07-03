@@ -10,7 +10,7 @@ import { formatElevatedSetupCommand, installCli, isPermissionError } from './ins
 import { resolveSkillSource } from './resolve-skill.mjs';
 import { ensureCredentials } from './credentials.mjs';
 import { runPurge } from './purge.mjs';
-import { recommendFfmpeg } from './check-ffmpeg.mjs';
+import { offerFfmpegInstall } from './check-ffmpeg.mjs';
 import { printSummary } from './summary.mjs';
 import { uiEnabled, introSplash, LivePhase, finale, rainbowText } from './ui.mjs';
 import { dropSudoPrivilegesForUser, isSudoRoot } from './sudo.mjs';
@@ -134,8 +134,8 @@ export async function run(flags) {
 
   dropSudoForUserFiles();
 
-  // 1b. Recommend ffmpeg (non-blocking) — used by clip merging and frame extraction.
-  recommendFfmpeg();
+  // 1b. Offer ffmpeg (interactive installs only) — used by clip merging and frame extraction.
+  await offerFfmpegInstall({ interactive: !flags.yes && !isSudoRoot() });
 
   // 2. Resolve skill source on disk. Under --dry-run the package may not be
   // installed globally yet — fall back to the requested version for display.
