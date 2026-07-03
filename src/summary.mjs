@@ -44,6 +44,9 @@ function nextSteps({ adapterResults, cli, credentials, purge }) {
     }
     steps.push('Ask your agent: "Generate an image of a sunset over mountains"');
     steps.push('Docs: https://github.com/Sogni-AI/sogni-creative-agent-skill');
+    if (adapterResults.some((r) => r.runtime === 'claude-desktop' && ['installed', 'upgraded'].includes(r.status))) {
+      steps.unshift('Fully quit and reopen Claude Desktop so it loads the Sogni tools.');
+    }
     return steps;
   }
 

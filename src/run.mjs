@@ -1,6 +1,7 @@
 import kleur from 'kleur';
 import prompts from 'prompts';
 import claudeCode from './adapters/claude-code.mjs';
+import claudeDesktop from './adapters/claude-desktop.mjs';
 import codexCli from './adapters/codex-cli.mjs';
 import hermes from './adapters/hermes.mjs';
 import chatgptWeb from './adapters/chatgpt-web.mjs';
@@ -16,6 +17,7 @@ import { dropSudoPrivilegesForUser, isSudoRoot } from './sudo.mjs';
 
 const ADAPTERS = {
   'claude-code': { adapter: claudeCode, label: 'Claude Code', shortKey: 'claude' },
+  'claude-desktop': { adapter: claudeDesktop, label: 'Claude Desktop', shortKey: 'desktop' },
   'codex-cli': { adapter: codexCli, label: 'OpenAI Codex CLI', shortKey: 'codex' },
   'hermes': { adapter: hermes, label: 'Hermes Agent', shortKey: 'hermes' },
   'chatgpt-web': { adapter: chatgptWeb, label: 'ChatGPT (web)', shortKey: 'chatgpt' },
