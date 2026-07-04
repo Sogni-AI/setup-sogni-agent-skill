@@ -13,7 +13,7 @@ for your Sogni API key when local CLI use needs one.
 ## Supports
 
 - **Claude Code** — installs into `~/.claude/skills/sogni-creative-agent-skill/`
-- **Claude Desktop** — registers a local MCP server entry in `claude_desktop_config.json` pointing at the globally installed CLI (requires skill package ≥ 3.7.0). Fully quit and reopen Claude Desktop after install. Restrict with `--only=desktop`.
+- **Claude Desktop** — registers a local MCP server entry in `claude_desktop_config.json` pointing at the globally installed CLI (requires a skill package version that ships `desktop-extension/` — install/upgrade with `npm i -g @sogni-ai/sogni-creative-agent-skill@latest`; the installer does this automatically). Fully quit and reopen Claude Desktop after install. Restrict with `--only=desktop`.
 - **OpenAI Codex CLI** — installs into `~/.codex/skills/sogni-creative-agent-skill/` (upgrades preserve locally installed runtime dependencies)
 - **Hermes Agent** — installs into `~/.hermes/skills/<category>/sogni-creative-agent-skill/`
 - **ChatGPT (web)** — prints Custom GPT instructions on request: `--only=chatgpt` (or `--output-chatgpt-bundle=<file>` to save them)

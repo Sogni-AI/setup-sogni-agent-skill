@@ -48,7 +48,7 @@ export default {
     if (!existsSync(serverPath)) {
       throw new Error(
         `Desktop extension server not found at ${serverPath} — ` +
-        'upgrade @sogni-ai/sogni-creative-agent-skill to a version that ships desktop-extension/ (>= 3.7.0).',
+        'upgrade the skill package: npm i -g @sogni-ai/sogni-creative-agent-skill@latest',
       );
     }
     if (dryRun) {

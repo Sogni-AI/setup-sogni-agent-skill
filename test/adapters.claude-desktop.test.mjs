@@ -1,20 +1,25 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import adapter from '../src/adapters/claude-desktop.mjs';
+import { claudeDesktopConfigPath } from '../src/detect.mjs';
 import { withTempHome, FIXTURE_SKILL_SRC } from './helpers.mjs';
 
-function desktopDir(home) {
-  return join(home, 'Library', 'Application Support', 'Claude');
+// Derive the config location from the same platform-aware helper the adapter
+// uses (darwin: Library/Application Support, linux: ~/.config, win32: %APPDATA%),
+// so these tests read/write the exact path the adapter does on every CI leg.
+// withTempHome redirects HOME/USERPROFILE/APPDATA before these run.
+function configPathFor() {
+  return claudeDesktopConfigPath();
 }
 
-function configPathFor(home) {
-  return join(desktopDir(home), 'claude_desktop_config.json');
+function desktopDir() {
+  return dirname(configPathFor());
 }
 
-function setupDesktop(home) {
-  mkdirSync(desktopDir(home), { recursive: true });
+function setupDesktop() {
+  mkdirSync(desktopDir(), { recursive: true });
 }
 
 // Copy the shared fixture into the per-test temp home and use the copy as srcDir.
@@ -37,15 +42,15 @@ function setupServerFile(srcDir) {
 
 test('install writes a merged mcpServers entry', (t) => {
   const home = withTempHome(t);
-  setupDesktop(home);
+  setupDesktop();
   const srcDir = setupSkillSrc(home);
   setupServerFile(srcDir);
-  writeFileSync(configPathFor(home), JSON.stringify({ mcpServers: { other: { command: 'x' } }, theme: 'dark' }));
+  writeFileSync(configPathFor(), JSON.stringify({ mcpServers: { other: { command: 'x' } }, theme: 'dark' }));
 
   const result = adapter.install({ srcDir, version: '3.7.0' });
   assert.equal(result.status, 'installed');
 
-  const cfg = JSON.parse(readFileSync(configPathFor(home), 'utf8'));
+  const cfg = JSON.parse(readFileSync(configPathFor(), 'utf8'));
   assert.equal(cfg.theme, 'dark');                       // untouched sibling keys
   assert.ok(cfg.mcpServers.other);                       // untouched sibling server
   const entry = cfg.mcpServers['sogni-creative-agent'];
@@ -57,17 +62,17 @@ test('install writes a merged mcpServers entry', (t) => {
 
 test('install creates the config file when absent', (t) => {
   const home = withTempHome(t);
-  setupDesktop(home);
+  setupDesktop();
   const srcDir = setupSkillSrc(home);
   setupServerFile(srcDir);
   const result = adapter.install({ srcDir, version: '3.7.0' });
   assert.equal(result.status, 'installed');
-  assert.ok(existsSync(configPathFor(home)));
+  assert.ok(existsSync(configPathFor()));
 });
 
 test('install is idempotent and reports upgrades', (t) => {
   const home = withTempHome(t);
-  setupDesktop(home);
+  setupDesktop();
   const srcDir = setupSkillSrc(home);
   setupServerFile(srcDir);
   adapter.install({ srcDir, version: '3.7.0' });
@@ -79,42 +84,42 @@ test('install is idempotent and reports upgrades', (t) => {
 
 test('install refuses to clobber invalid JSON', (t) => {
   const home = withTempHome(t);
-  setupDesktop(home);
+  setupDesktop();
   const srcDir = setupSkillSrc(home);
   setupServerFile(srcDir);
-  writeFileSync(configPathFor(home), '{broken');
+  writeFileSync(configPathFor(), '{broken');
   assert.throws(() => adapter.install({ srcDir, version: '3.7.0' }), /not valid JSON/);
-  assert.equal(readFileSync(configPathFor(home), 'utf8'), '{broken'); // untouched
+  assert.equal(readFileSync(configPathFor(), 'utf8'), '{broken'); // untouched
 });
 
 test('install fails clearly when the package lacks desktop-extension', (t) => {
   const home = withTempHome(t);
-  setupDesktop(home);
+  setupDesktop();
   const srcDir = setupSkillSrc(home);
   rmSync(join(srcDir, 'desktop-extension'), { recursive: true, force: true });
-  assert.throws(() => adapter.install({ srcDir, version: '3.7.0' }), /3\.7\.0/);
+  assert.throws(() => adapter.install({ srcDir, version: '3.7.0' }), /@latest/);
 });
 
 test('uninstall removes only our entry', (t) => {
   const home = withTempHome(t);
-  setupDesktop(home);
+  setupDesktop();
   const srcDir = setupSkillSrc(home);
   setupServerFile(srcDir);
-  writeFileSync(configPathFor(home), JSON.stringify({ mcpServers: { other: { command: 'x' } } }));
+  writeFileSync(configPathFor(), JSON.stringify({ mcpServers: { other: { command: 'x' } } }));
   adapter.install({ srcDir, version: '3.7.0' });
   const result = adapter.uninstall();
   assert.equal(result.removed.length, 1);
-  const cfg = JSON.parse(readFileSync(configPathFor(home), 'utf8'));
+  const cfg = JSON.parse(readFileSync(configPathFor(), 'utf8'));
   assert.ok(cfg.mcpServers.other);
   assert.equal('sogni-creative-agent' in cfg.mcpServers, false);
 });
 
 test('dryRun writes nothing', (t) => {
   const home = withTempHome(t);
-  setupDesktop(home);
+  setupDesktop();
   const srcDir = setupSkillSrc(home);
   setupServerFile(srcDir);
   const result = adapter.install({ srcDir, version: '3.7.0', dryRun: true });
   assert.equal(result.status, 'would-install');
-  assert.equal(existsSync(configPathFor(home)), false);
+  assert.equal(existsSync(configPathFor()), false);
 });

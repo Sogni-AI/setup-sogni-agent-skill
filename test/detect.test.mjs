@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { detectAll, claudeDesktopConfigPath } from '../src/detect.mjs';
 import { withTempHome } from './helpers.mjs';
 
@@ -86,8 +86,10 @@ test('detectAll reports claude-desktop not-found without the config dir', (t) =>
 });
 
 test('detectAll reports claude-desktop available with installed version', (t) => {
-  const home = withTempHome(t);
-  const dir = join(home, 'Library', 'Application Support', 'Claude');
+  withTempHome(t);
+  // Same platform-aware path detectClaudeDesktop() reads; withTempHome has
+  // redirected HOME/APPDATA so this resolves inside the sandbox on every CI leg.
+  const dir = dirname(claudeDesktopConfigPath());
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, 'claude_desktop_config.json'), JSON.stringify({
     mcpServers: { 'sogni-creative-agent': { command: 'node', args: [], env: { SOGNI_SKILL_VERSION: '3.7.0' } } },
