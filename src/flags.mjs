@@ -17,17 +17,17 @@ const VALUE_FLAGS = new Set([
   '--output-chatgpt-bundle',
 ]);
 
-const RUNTIME_FILTERS = new Set(['claude', 'codex', 'hermes', 'chatgpt']);
+const RUNTIME_FILTERS = new Set(['claude', 'desktop', 'codex', 'hermes', 'chatgpt']);
 const ALL_RUNTIME_FILTERS = [...RUNTIME_FILTERS];
 
 function parseRuntimeFilterFlag(key, value) {
   const values = value.split(',').map(s => s.trim()).filter(Boolean);
   if (values.length === 0) {
-    throw new Error(`${key} must list at least one runtime: claude, codex, hermes, chatgpt`);
+    throw new Error(`${key} must list at least one runtime: claude, desktop, codex, hermes, chatgpt`);
   }
   const invalid = values.filter(v => !RUNTIME_FILTERS.has(v));
   if (invalid.length > 0) {
-    throw new Error(`Invalid runtime for ${key}: ${invalid.join(', ')}. Use claude, codex, hermes, or chatgpt.`);
+    throw new Error(`Invalid runtime for ${key}: ${invalid.join(', ')}. Use claude, desktop, codex, hermes, or chatgpt.`);
   }
   return values;
 }
@@ -41,7 +41,7 @@ function validateSelectedRuntimes({ only, exclude }) {
   if (!only && !exclude) return;
   const selected = (only ?? ALL_RUNTIME_FILTERS).filter((runtime) => !exclude?.includes(runtime));
   if (selected.length === 0) {
-    throw new Error('No runtimes selected after applying --only/--exclude. Use at least one of claude, codex, hermes, or chatgpt.');
+    throw new Error('No runtimes selected after applying --only/--exclude. Use at least one of claude, desktop, codex, hermes, or chatgpt.');
   }
 }
 

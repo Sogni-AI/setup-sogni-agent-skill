@@ -1,9 +1,36 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { homedir, platform as osPlatform } from 'node:os';
+import { join, dirname } from 'node:path';
 
 const SKILL_DIR_NAME = 'sogni-creative-agent-skill';
 const MARKER = '.sogni-installed.json';
+const DESKTOP_SERVER_KEY = 'sogni-creative-agent';
+
+export function claudeDesktopConfigPath({ platform = osPlatform(), home = homedir(), env = process.env } = {}) {
+  if (platform === 'darwin') {
+    return join(home, 'Library', 'Application Support', 'Claude', 'claude_desktop_config.json');
+  }
+  if (platform === 'win32') {
+    return join(env.APPDATA ?? join(home, 'AppData', 'Roaming'), 'Claude', 'claude_desktop_config.json');
+  }
+  return join(home, '.config', 'Claude', 'claude_desktop_config.json');
+}
+
+function detectClaudeDesktop() {
+  const configPath = claudeDesktopConfigPath();
+  const dir = dirname(configPath);
+  if (!existsSync(dir)) {
+    return { runtime: 'claude-desktop', status: 'not-found', path: null, skillDir: null, installedVersion: null };
+  }
+  let installedVersion = null;
+  try {
+    const cfg = JSON.parse(readFileSync(configPath, 'utf8'));
+    installedVersion = cfg?.mcpServers?.[DESKTOP_SERVER_KEY]?.env?.SOGNI_SKILL_VERSION ?? null;
+  } catch {
+    // Missing or malformed config file — treat as available with nothing installed.
+  }
+  return { runtime: 'claude-desktop', status: 'available', path: dir, skillDir: null, installedVersion };
+}
 
 function readMarker(dir) {
   const p = join(dir, MARKER);
@@ -92,5 +119,5 @@ function detectChatgptWeb() {
 }
 
 export function detectAll() {
-  return [detectClaudeCode(), detectCodexCli(), detectHermes(), detectChatgptWeb()];
+  return [detectClaudeCode(), detectClaudeDesktop(), detectCodexCli(), detectHermes(), detectChatgptWeb()];
 }

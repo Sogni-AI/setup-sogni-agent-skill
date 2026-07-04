@@ -1,6 +1,7 @@
 import kleur from 'kleur';
 import prompts from 'prompts';
 import claudeCode from './adapters/claude-code.mjs';
+import claudeDesktop from './adapters/claude-desktop.mjs';
 import codexCli from './adapters/codex-cli.mjs';
 import hermes from './adapters/hermes.mjs';
 import chatgptWeb from './adapters/chatgpt-web.mjs';
@@ -9,13 +10,14 @@ import { formatElevatedSetupCommand, installCli, isPermissionError } from './ins
 import { resolveSkillSource } from './resolve-skill.mjs';
 import { ensureCredentials } from './credentials.mjs';
 import { runPurge } from './purge.mjs';
-import { recommendFfmpeg } from './check-ffmpeg.mjs';
+import { offerFfmpegInstall } from './check-ffmpeg.mjs';
 import { printSummary } from './summary.mjs';
 import { uiEnabled, introSplash, LivePhase, finale, rainbowText } from './ui.mjs';
 import { dropSudoPrivilegesForUser, isSudoRoot } from './sudo.mjs';
 
 const ADAPTERS = {
   'claude-code': { adapter: claudeCode, label: 'Claude Code', shortKey: 'claude' },
+  'claude-desktop': { adapter: claudeDesktop, label: 'Claude Desktop', shortKey: 'desktop' },
   'codex-cli': { adapter: codexCli, label: 'OpenAI Codex CLI', shortKey: 'codex' },
   'hermes': { adapter: hermes, label: 'Hermes Agent', shortKey: 'hermes' },
   'chatgpt-web': { adapter: chatgptWeb, label: 'ChatGPT (web)', shortKey: 'chatgpt' },
@@ -23,7 +25,11 @@ const ADAPTERS = {
 
 function filterByFlags(detections, { only, exclude }) {
   return detections.filter(d => {
-    const key = ADAPTERS[d.runtime].shortKey;
+    const meta = ADAPTERS[d.runtime];
+    // Runtimes can be detected before their adapter is registered (e.g. new
+    // runtimes land detection-first); skip them rather than crash.
+    if (!meta) return false;
+    const key = meta.shortKey;
     if (only && !only.includes(key)) return false;
     if (exclude && exclude.includes(key)) return false;
     return true;
@@ -128,8 +134,8 @@ export async function run(flags) {
 
   dropSudoForUserFiles();
 
-  // 1b. Recommend ffmpeg (non-blocking) — used by clip merging and frame extraction.
-  recommendFfmpeg();
+  // 1b. Offer ffmpeg (interactive installs only) — used by clip merging and frame extraction.
+  await offerFfmpegInstall({ interactive: !flags.yes && !isSudoRoot() });
 
   // 2. Resolve skill source on disk. Under --dry-run the package may not be
   // installed globally yet — fall back to the requested version for display.

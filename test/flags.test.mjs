@@ -47,7 +47,7 @@ test('rejects filter combinations that select no runtimes', () => {
     /No runtimes selected/
   );
   assert.throws(
-    () => parseFlags(['--exclude=claude,codex,hermes,chatgpt']),
+    () => parseFlags(['--exclude=claude,desktop,codex,hermes,chatgpt']),
     /No runtimes selected/
   );
 });
@@ -91,6 +91,16 @@ test('parses --no-ui and --boring, defaulting to false', () => {
   assert.equal(parseFlags([]).boring, false);
   assert.equal(parseFlags(['--no-ui']).noUi, true);
   assert.equal(parseFlags(['--boring']).boring, true);
+});
+
+test('--only=desktop is accepted', () => {
+  const flags = parseFlags(['--only=desktop']);
+  assert.deepEqual(flags.only, ['desktop']);
+});
+
+test('--exclude=desktop is accepted alongside others', () => {
+  const flags = parseFlags(['--exclude=desktop,chatgpt']);
+  assert.deepEqual(flags.exclude, ['desktop', 'chatgpt']);
 });
 
 test('parses --purge', () => {

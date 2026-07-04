@@ -59,3 +59,15 @@ test('purge summary highlights backup path and API-key sensitivity', () => {
   assert.match(out, /contains your API key/);
   assert.doesNotMatch(out, /Try it: sogni-agent --version/);
 });
+
+test('summary tells the user to restart Claude Desktop after a desktop install', () => {
+  const out = captureSummary({
+    adapterResults: [{
+      runtime: 'claude-desktop', label: 'Claude Desktop', status: 'installed',
+      version: '3.7.0', previousVersion: null, target: '/tmp/Claude', notes: [],
+    }],
+    cli: { skipped: false, spec: '@sogni-ai/sogni-creative-agent-skill@3.7.0' },
+    credentials: { action: 'skipped-file', path: '/tmp/credentials' },
+  });
+  assert.match(out, /quit and reopen Claude Desktop/i);
+});
