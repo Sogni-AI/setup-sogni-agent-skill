@@ -67,7 +67,8 @@ test('chatgpt-web always available', (t) => {
 test('claudeDesktopConfigPath per platform', () => {
   assert.equal(
     claudeDesktopConfigPath({ platform: 'darwin', home: '/Users/x', env: {} }),
-    '/Users/x/Library/Application Support/Claude/claude_desktop_config.json',
+    // Built with join() so the expectation is separator-agnostic on Windows CI runners.
+    join('/Users/x', 'Library', 'Application Support', 'Claude', 'claude_desktop_config.json'),
   );
   assert.equal(
     claudeDesktopConfigPath({ platform: 'win32', home: 'C:\\Users\\x', env: { APPDATA: 'C:\\Users\\x\\AppData\\Roaming' } }),
@@ -75,7 +76,7 @@ test('claudeDesktopConfigPath per platform', () => {
   );
   assert.equal(
     claudeDesktopConfigPath({ platform: 'linux', home: '/home/x', env: {} }),
-    '/home/x/.config/Claude/claude_desktop_config.json',
+    join('/home/x', '.config', 'Claude', 'claude_desktop_config.json'),
   );
 });
 
