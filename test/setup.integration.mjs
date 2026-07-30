@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { delimiter, join } from 'node:path';
 
 function makeFakeNpmRoot() {
   const root = mkdtempSync(join(tmpdir(), 'sogni-int-npm-'));
@@ -24,6 +24,22 @@ function makeFakeNpmRoot() {
   writeFileSync(join(pkgDir, 'scripts/check-creative-agent-runtime.mjs'), '\n');
   writeFileSync(join(pkgDir, 'generated/creative-agent-runtime.mjs'), '\n');
   return root;
+}
+
+function writeFailingNpmShim(binDir, detail) {
+  if (process.platform === 'win32') {
+    writeFileSync(
+      join(binDir, 'npm.cmd'),
+      `@echo off\r\necho npm error code EACCES 1>&2\r\necho npm error Error: EACCES: permission denied, ${detail} 1>&2\r\nexit /b 1\r\n`
+    );
+    return;
+  }
+
+  writeFileSync(
+    join(binDir, 'npm'),
+    `#!/bin/sh\necho "npm error code EACCES" >&2\necho "npm error Error: EACCES: permission denied, ${detail}" >&2\nexit 1\n`,
+    { mode: 0o755 }
+  );
 }
 
 test('--dry-run prints detection table and writes nothing', (t) => {
@@ -150,7 +166,7 @@ test('--only for a missing local runtime exits before global CLI install', (t) =
       ...process.env,
       HOME: home,
       USERPROFILE: home,
-      PATH: `${binDir}:${process.env.PATH}`,
+      PATH: `${binDir}${delimiter}${process.env.PATH}`,
     },
     encoding: 'utf8',
   });
@@ -180,7 +196,7 @@ test('--dry-run skips the global CLI install entirely', (t) => {
       USERPROFILE: home,
       INSTALL_CLI: '', // make sure the env-var skip is NOT what saves us
       SOGNI_TEST_NPM_ROOT: npmRoot,
-      PATH: `${binDir}:${process.env.PATH}`,
+      PATH: `${binDir}${delimiter}${process.env.PATH}`,
     },
     encoding: 'utf8',
   });
@@ -198,14 +214,7 @@ test('permission-denied global install suggests rerunning the full setup command
 
   const binDir = mkdtempSync(join(tmpdir(), 'sogni-int-bin-'));
   t.after(() => rmSync(binDir, { recursive: true, force: true }));
-  writeFileSync(
-    join(binDir, 'npm'),
-    '#!/bin/sh\n' +
-      'echo "npm error code EACCES" >&2\n' +
-      'echo "npm error Error: EACCES: permission denied, mkdir \'/usr/local/lib/node_modules/@sogni-ai\'" >&2\n' +
-      'exit 1\n',
-    { mode: 0o755 }
-  );
+  writeFailingNpmShim(binDir, "mkdir '/usr/local/lib/node_modules/@sogni-ai'");
 
   const r = spawnSync(process.execPath, ['bin/setup.mjs', '--only=codex', '--version=2.3.0'], {
     cwd: process.cwd(),
@@ -214,7 +223,7 @@ test('permission-denied global install suggests rerunning the full setup command
       HOME: home,
       USERPROFILE: home,
       INSTALL_CLI: '',
-      PATH: `${binDir}:${process.env.PATH}`,
+      PATH: `${binDir}${delimiter}${process.env.PATH}`,
     },
     encoding: 'utf8',
   });
@@ -254,14 +263,7 @@ test('--uninstall --remove-cli aborts before removing skill files when npm needs
 
   const binDir = mkdtempSync(join(tmpdir(), 'sogni-int-bin-'));
   t.after(() => rmSync(binDir, { recursive: true, force: true }));
-  writeFileSync(
-    join(binDir, 'npm'),
-    '#!/bin/sh\n' +
-      'echo "npm error code EACCES" >&2\n' +
-      'echo "npm error Error: EACCES: permission denied, unlink \'/usr/local/bin/sogni-agent\'" >&2\n' +
-      'exit 1\n',
-    { mode: 0o755 }
-  );
+  writeFailingNpmShim(binDir, "unlink '/usr/local/bin/sogni-agent'");
 
   const r = spawnSync(process.execPath, ['bin/setup.mjs', '--uninstall', '--remove-cli', '--only=codex'], {
     cwd: process.cwd(),
@@ -269,7 +271,7 @@ test('--uninstall --remove-cli aborts before removing skill files when npm needs
       ...process.env,
       HOME: home,
       USERPROFILE: home,
-      PATH: `${binDir}:${process.env.PATH}`,
+      PATH: `${binDir}${delimiter}${process.env.PATH}`,
     },
     encoding: 'utf8',
   });
