@@ -1,5 +1,7 @@
 import { spawn } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { platform as osPlatform } from 'node:os';
+import { dirname, join } from 'node:path';
 import kleur from 'kleur';
 
 const PKG = '@sogni-ai/sogni-creative-agent-skill';
@@ -22,6 +24,47 @@ export function formatSetupCommand(argv = process.argv.slice(2), { sudo = false 
 
 export function formatElevatedSetupCommand(argv = process.argv.slice(2), { platform = osPlatform() } = {}) {
   return formatSetupCommand(argv, { sudo: platform !== 'win32' });
+}
+
+function envValue(env, name) {
+  if (env[name] !== undefined) return env[name];
+  const entry = Object.entries(env)
+    .find(([key]) => key.toLowerCase() === name.toLowerCase());
+  return entry?.[1];
+}
+
+export function npmInvocation(
+  args,
+  {
+    platform = osPlatform(),
+    env = process.env,
+    execPath = process.execPath,
+    pathExists = existsSync,
+  } = {}
+) {
+  if (platform !== 'win32') {
+    return { command: 'npm', args };
+  }
+
+  // npm is exposed as npm.cmd on Windows, which cannot be launched directly
+  // by child_process without a shell. Run npm's JS entry point with Node
+  // instead so arguments remain an array and do not pass through cmd.exe.
+  const npmExecPath = envValue(env, 'npm_execpath');
+  const bundledNpmExecPath = join(dirname(execPath), 'node_modules', 'npm', 'bin', 'npm-cli.js');
+  const cliPath = [npmExecPath, bundledNpmExecPath].find(
+    candidate => candidate && pathExists(candidate)
+  );
+
+  if (!cliPath) {
+    // Preserve the existing ENOENT handling for incomplete Node/npm installs.
+    return { command: 'npm', args };
+  }
+
+  const npmNodeExecPath = envValue(env, 'npm_node_execpath');
+  const nodeExecPath = npmNodeExecPath && pathExists(npmNodeExecPath)
+    ? npmNodeExecPath
+    : execPath;
+  return { command: nodeExecPath, args: [cliPath, ...args] };
 }
 
 function printPermissionHelp({ argv = process.argv.slice(2), platform = osPlatform() } = {}) {
@@ -79,7 +122,8 @@ export async function installCli({ version = 'latest', quiet = false } = {}) {
 
 function runNpm(args, { quiet }) {
   return new Promise((resolve) => {
-    const child = spawn('npm', args, {
+    const npm = npmInvocation(args);
+    const child = spawn(npm.command, npm.args, {
       stdio: ['inherit', quiet ? 'pipe' : 'inherit', 'pipe'],
       env: process.env,
     });

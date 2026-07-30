@@ -27,12 +27,20 @@ function makeFakeNpmRoot() {
 }
 
 function writeFailingNpmShim(binDir, detail) {
+  const npmExecPath = join(binDir, 'npm-cli.mjs');
+  writeFileSync(
+    npmExecPath,
+    `console.error(${JSON.stringify('npm error code EACCES')});\n` +
+      `console.error(${JSON.stringify(`npm error Error: EACCES: permission denied, ${detail}`)});\n` +
+      'process.exitCode = 1;\n'
+  );
+
   if (process.platform === 'win32') {
     writeFileSync(
       join(binDir, 'npm.cmd'),
       `@echo off\r\necho npm error code EACCES 1>&2\r\necho npm error Error: EACCES: permission denied, ${detail} 1>&2\r\nexit /b 1\r\n`
     );
-    return;
+    return npmExecPath;
   }
 
   writeFileSync(
@@ -40,6 +48,7 @@ function writeFailingNpmShim(binDir, detail) {
     `#!/bin/sh\necho "npm error code EACCES" >&2\necho "npm error Error: EACCES: permission denied, ${detail}" >&2\nexit 1\n`,
     { mode: 0o755 }
   );
+  return npmExecPath;
 }
 
 function withPathPrefix(env, binDir) {
@@ -223,7 +232,7 @@ test('permission-denied global install suggests rerunning the full setup command
 
   const binDir = mkdtempSync(join(tmpdir(), 'sogni-int-bin-'));
   t.after(() => rmSync(binDir, { recursive: true, force: true }));
-  writeFailingNpmShim(binDir, "mkdir '/usr/local/lib/node_modules/@sogni-ai'");
+  const npmExecPath = writeFailingNpmShim(binDir, "mkdir '/usr/local/lib/node_modules/@sogni-ai'");
 
   const r = spawnSync(process.execPath, ['bin/setup.mjs', '--only=codex', '--version=2.3.0'], {
     cwd: process.cwd(),
@@ -232,6 +241,8 @@ test('permission-denied global install suggests rerunning the full setup command
       HOME: home,
       USERPROFILE: home,
       INSTALL_CLI: '',
+      npm_execpath: npmExecPath,
+      npm_node_execpath: process.execPath,
     }, binDir),
     encoding: 'utf8',
   });
@@ -271,7 +282,7 @@ test('--uninstall --remove-cli aborts before removing skill files when npm needs
 
   const binDir = mkdtempSync(join(tmpdir(), 'sogni-int-bin-'));
   t.after(() => rmSync(binDir, { recursive: true, force: true }));
-  writeFailingNpmShim(binDir, "unlink '/usr/local/bin/sogni-agent'");
+  const npmExecPath = writeFailingNpmShim(binDir, "unlink '/usr/local/bin/sogni-agent'");
 
   const r = spawnSync(process.execPath, ['bin/setup.mjs', '--uninstall', '--remove-cli', '--only=codex'], {
     cwd: process.cwd(),
@@ -279,6 +290,8 @@ test('--uninstall --remove-cli aborts before removing skill files when npm needs
       ...process.env,
       HOME: home,
       USERPROFILE: home,
+      npm_execpath: npmExecPath,
+      npm_node_execpath: process.execPath,
     }, binDir),
     encoding: 'utf8',
   });
