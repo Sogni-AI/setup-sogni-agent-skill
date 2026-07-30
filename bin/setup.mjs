@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { parseFlags } from '../src/flags.mjs';
+import { DEFAULT_SKILL_VERSION, parseFlags } from '../src/flags.mjs';
 import { run } from '../src/run.mjs';
 
 const HELP = `setup-sogni-agent-skill — install Sogni Creative Agent Skill into your agent runtimes
@@ -14,7 +14,7 @@ Options:
                                   Restrict to listed runtimes
                                   Local targets must already have config dirs
   --exclude=chatgpt               Exclude listed runtimes
-  --version=X.Y.Z                 Pin the skill package version (default: latest)
+  --version=X.Y.Z                 Pin the skill package version (default: ${DEFAULT_SKILL_VERSION})
   --hermes-category=NAME          Hermes category directory (default: media)
   --no-credentials                Skip the API key prompt
   --output-chatgpt-bundle=PATH    Also write Custom-GPT instructions to a file

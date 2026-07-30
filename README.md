@@ -10,10 +10,13 @@ Detects which agent runtimes you have installed, installs the `sogni-agent`
 CLI globally, registers `SKILL.md` into each detected local runtime, and prompts
 for your Sogni API key when local CLI use needs one.
 
+This setup release defaults to the tested Creative Agent Skill version
+`3.21.0`. Use `--version=X.Y.Z` to select a different release.
+
 ## Supports
 
 - **Claude Code** — installs into `~/.claude/skills/sogni-creative-agent-skill/`
-- **Claude Desktop** — registers a local MCP server entry in `claude_desktop_config.json` pointing at the globally installed CLI (requires a skill package version that ships `desktop-extension/` — install/upgrade with `npm i -g @sogni-ai/sogni-creative-agent-skill@latest`; the installer does this automatically). Fully quit and reopen Claude Desktop after install. Restrict with `--only=desktop`.
+- **Claude Desktop** — registers a local MCP server entry in `claude_desktop_config.json` pointing at the globally installed CLI (requires a skill package version that ships `desktop-extension/` — install/upgrade with `npm i -g @sogni-ai/sogni-creative-agent-skill@3.21.0`; the installer does this automatically). Fully quit and reopen Claude Desktop after install. Restrict with `--only=desktop`.
 - **OpenAI Codex CLI** — installs into `~/.codex/skills/sogni-creative-agent-skill/` (upgrades preserve locally installed runtime dependencies)
 - **Hermes Agent** — installs into `~/.hermes/skills/<category>/sogni-creative-agent-skill/`
 - **ChatGPT (web)** — prints Custom GPT instructions on request: `--only=chatgpt` (or `--output-chatgpt-bundle=<file>` to save them)
@@ -126,7 +129,7 @@ it.
 ## How it works
 
 1. For explicit local-only runs like `--only=codex`, first checks that at least one selected local runtime is detected.
-2. Runs `npm install -g @sogni-ai/sogni-creative-agent-skill@latest`.
+2. Runs `npm install -g @sogni-ai/sogni-creative-agent-skill@3.21.0` by default.
 3. Resolves the global install path via `npm root -g`.
 4. If started with `sudo`, drops back to the original user before touching files in your home directory.
 5. Detects `~/.claude/`, `~/.codex/`, `~/.hermes/`, and the Claude Desktop config file (`claude_desktop_config.json`); treats ChatGPT (web) as always available (manual setup).

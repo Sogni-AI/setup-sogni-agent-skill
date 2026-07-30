@@ -20,6 +20,8 @@ const VALUE_FLAGS = new Set([
 const RUNTIME_FILTERS = new Set(['claude', 'desktop', 'codex', 'hermes', 'chatgpt']);
 const ALL_RUNTIME_FILTERS = [...RUNTIME_FILTERS];
 
+export const DEFAULT_SKILL_VERSION = '3.21.0';
+
 function parseRuntimeFilterFlag(key, value) {
   const values = value.split(',').map(s => s.trim()).filter(Boolean);
   if (values.length === 0) {
@@ -55,7 +57,7 @@ export function parseFlags(argv) {
     noCredentials: false,
     noUi: false,
     boring: false,
-    version: 'latest',
+    version: DEFAULT_SKILL_VERSION,
     hermesCategory: 'media',
     only: null,
     exclude: null,

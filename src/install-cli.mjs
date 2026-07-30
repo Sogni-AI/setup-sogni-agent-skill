@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs';
 import { platform as osPlatform } from 'node:os';
 import { dirname, join } from 'node:path';
 import kleur from 'kleur';
+import { DEFAULT_SKILL_VERSION } from './flags.mjs';
 
 const PKG = '@sogni-ai/sogni-creative-agent-skill';
 
@@ -96,7 +97,7 @@ function printPermissionHelp({ argv = process.argv.slice(2), platform = osPlatfo
 // `quiet` pipes npm's stdout instead of inheriting it, so an animated spinner
 // can own the terminal while npm works; the captured output is replayed only
 // on failure. Async (spawn, not spawnSync) so the spinner's timer keeps firing.
-export async function installCli({ version = 'latest', quiet = false } = {}) {
+export async function installCli({ version = DEFAULT_SKILL_VERSION, quiet = false } = {}) {
   if (process.env.INSTALL_CLI === 'skip') {
     return { skipped: true, reason: 'INSTALL_CLI=skip' };
   }
