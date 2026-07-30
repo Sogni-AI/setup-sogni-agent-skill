@@ -42,6 +42,17 @@ function writeFailingNpmShim(binDir, detail) {
   );
 }
 
+function withPathPrefix(env, binDir) {
+  const pathEntry = Object.entries(env).find(([key]) => key.toLowerCase() === 'path');
+  const normalized = Object.fromEntries(
+    Object.entries(env).filter(([key]) => key.toLowerCase() !== 'path')
+  );
+  return {
+    ...normalized,
+    PATH: `${binDir}${delimiter}${pathEntry?.[1] ?? ''}`,
+  };
+}
+
 test('--dry-run prints detection table and writes nothing', (t) => {
   const home = mkdtempSync(join(tmpdir(), 'sogni-int-home-'));
   mkdirSync(join(home, '.claude'));
@@ -162,12 +173,11 @@ test('--only for a missing local runtime exits before global CLI install', (t) =
 
   const r = spawnSync(process.execPath, ['bin/setup.mjs', '--only=codex', '--yes'], {
     cwd: process.cwd(),
-    env: {
+    env: withPathPrefix({
       ...process.env,
       HOME: home,
       USERPROFILE: home,
-      PATH: `${binDir}${delimiter}${process.env.PATH}`,
-    },
+    }, binDir),
     encoding: 'utf8',
   });
 
@@ -190,14 +200,13 @@ test('--dry-run skips the global CLI install entirely', (t) => {
 
   const r = spawnSync(process.execPath, ['bin/setup.mjs', '--dry-run', '--yes', '--no-credentials'], {
     cwd: process.cwd(),
-    env: {
+    env: withPathPrefix({
       ...process.env,
       HOME: home,
       USERPROFILE: home,
       INSTALL_CLI: '', // make sure the env-var skip is NOT what saves us
       SOGNI_TEST_NPM_ROOT: npmRoot,
-      PATH: `${binDir}${delimiter}${process.env.PATH}`,
-    },
+    }, binDir),
     encoding: 'utf8',
   });
   if (r.status !== 0) {
@@ -218,13 +227,12 @@ test('permission-denied global install suggests rerunning the full setup command
 
   const r = spawnSync(process.execPath, ['bin/setup.mjs', '--only=codex', '--version=2.3.0'], {
     cwd: process.cwd(),
-    env: {
+    env: withPathPrefix({
       ...process.env,
       HOME: home,
       USERPROFILE: home,
       INSTALL_CLI: '',
-      PATH: `${binDir}${delimiter}${process.env.PATH}`,
-    },
+    }, binDir),
     encoding: 'utf8',
   });
 
@@ -267,12 +275,11 @@ test('--uninstall --remove-cli aborts before removing skill files when npm needs
 
   const r = spawnSync(process.execPath, ['bin/setup.mjs', '--uninstall', '--remove-cli', '--only=codex'], {
     cwd: process.cwd(),
-    env: {
+    env: withPathPrefix({
       ...process.env,
       HOME: home,
       USERPROFILE: home,
-      PATH: `${binDir}${delimiter}${process.env.PATH}`,
-    },
+    }, binDir),
     encoding: 'utf8',
   });
 
