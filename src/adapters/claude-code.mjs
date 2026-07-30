@@ -1,7 +1,13 @@
 import { copyFileSync, existsSync, mkdirSync, rmSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { writeMarker, readMarker } from './shared.mjs';
+import {
+  HOST_LAUNCHER_NAME,
+  materializeSkillLauncher,
+  readMarker,
+  writeHostLauncher,
+  writeMarker,
+} from './shared.mjs';
 
 const SKILL_NAME = 'sogni-creative-agent-skill';
 const FILES_TO_COPY = ['SKILL.md', 'llm.txt', 'version.mjs', 'skill-package.json'];
@@ -36,6 +42,13 @@ export default {
       copyFileSync(from, to);
       written.push(to);
     }
+    const launcherPath = writeHostLauncher(dir, {
+      srcDir,
+      version,
+      framework: 'claude-code',
+    });
+    materializeSkillLauncher(join(dir, 'SKILL.md'), launcherPath);
+    written.push(join(dir, HOST_LAUNCHER_NAME));
     writeMarker(dir, { version, adapter: 'claude-code', srcDir });
     written.push(join(dir, '.sogni-installed.json'));
     return {

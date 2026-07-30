@@ -12,7 +12,13 @@ test('install copies skill files into ~/.claude/skills/', (t) => {
   assert.ok(existsSync(join(skillDir, 'SKILL.md')));
   assert.ok(existsSync(join(skillDir, 'llm.txt')));
   assert.ok(existsSync(join(skillDir, 'version.mjs')));
+  assert.ok(existsSync(join(skillDir, '.sogni-agent-launcher.mjs')));
   assert.ok(existsSync(join(skillDir, '.sogni-installed.json')));
+  const installedSkill = readFileSync(join(skillDir, 'SKILL.md'), 'utf8');
+  assert.match(installedSkill, /Installed host command/);
+  const launcher = readFileSync(join(skillDir, '.sogni-agent-launcher.mjs'), 'utf8');
+  assert.match(launcher, /SOGNI_AGENT_FRAMEWORK: "claude-code"/);
+  assert.match(launcher, /SOGNI_AGENT_SURFACE: "personal_skill"/);
   const marker = JSON.parse(readFileSync(join(skillDir, '.sogni-installed.json'), 'utf8'));
   assert.equal(marker.version, '2.3.0');
   assert.equal(marker.adapter, 'claude-code');

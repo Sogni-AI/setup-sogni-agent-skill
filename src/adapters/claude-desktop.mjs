@@ -65,6 +65,9 @@ export default {
       env: {
         SOGNI_AGENT_PATH: join(srcDir, 'sogni-agent.mjs'),
         SOGNI_SKILL_VERSION: version,
+        SOGNI_AGENT_FRAMEWORK: 'claude-desktop',
+        SOGNI_AGENT_SURFACE: 'mcp',
+        SOGNI_AGENT_SURFACE_VERSION: version,
       },
     };
     const ffmpeg = resolveFfmpeg();

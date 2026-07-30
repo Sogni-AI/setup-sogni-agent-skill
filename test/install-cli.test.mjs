@@ -1,6 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { formatElevatedSetupCommand, formatSetupCommand, isPermissionError } from '../src/install-cli.mjs';
+import {
+  formatElevatedSetupCommand,
+  formatSetupCommand,
+  isPermissionError,
+  npmInvocation,
+} from '../src/install-cli.mjs';
 
 test('isPermissionError matches EACCES output', () => {
   const sample = `npm error code EACCES
@@ -51,5 +56,32 @@ test('formatElevatedSetupCommand uses Administrator-terminal style on Windows', 
   assert.equal(
     formatElevatedSetupCommand(['--only=codex'], { platform: 'darwin' }),
     'sudo npx setup-sogni-agent-skill --only=codex'
+  );
+});
+
+test('npmInvocation keeps direct npm execution off Windows', () => {
+  assert.deepEqual(
+    npmInvocation(['install', '-g', 'example'], { platform: 'darwin' }),
+    { command: 'npm', args: ['install', '-g', 'example'] }
+  );
+});
+
+test('npmInvocation runs npm CLI through Node on Windows', () => {
+  const npmCli = 'C:\\node\\node_modules\\npm\\bin\\npm-cli.js';
+  const node = 'C:\\node\\node.exe';
+  assert.deepEqual(
+    npmInvocation(['install', '-g', 'example'], {
+      platform: 'win32',
+      env: {
+        npm_execpath: npmCli,
+        npm_node_execpath: node,
+      },
+      execPath: node,
+      pathExists: candidate => candidate === npmCli || candidate === node,
+    }),
+    {
+      command: node,
+      args: [npmCli, 'install', '-g', 'example'],
+    }
   );
 });

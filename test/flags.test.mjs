@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseFlags } from '../src/flags.mjs';
+import { DEFAULT_SKILL_VERSION, parseFlags } from '../src/flags.mjs';
 
 test('parses empty argv', () => {
   const flags = parseFlags([]);
@@ -9,7 +9,8 @@ test('parses empty argv', () => {
   assert.equal(flags.uninstall, false);
   assert.equal(flags.removeCli, false);
   assert.equal(flags.noCredentials, false);
-  assert.equal(flags.version, 'latest');
+  assert.equal(DEFAULT_SKILL_VERSION, '3.21.0');
+  assert.equal(flags.version, DEFAULT_SKILL_VERSION);
   assert.equal(flags.hermesCategory, 'media');
   assert.deepEqual(flags.only, null);
   assert.deepEqual(flags.exclude, null);

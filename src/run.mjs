@@ -6,7 +6,12 @@ import codexCli from './adapters/codex-cli.mjs';
 import hermes from './adapters/hermes.mjs';
 import chatgptWeb from './adapters/chatgpt-web.mjs';
 import { detectAll } from './detect.mjs';
-import { formatElevatedSetupCommand, installCli, isPermissionError } from './install-cli.mjs';
+import {
+  formatElevatedSetupCommand,
+  installCli,
+  isPermissionError,
+  npmInvocation,
+} from './install-cli.mjs';
 import { resolveSkillSource } from './resolve-skill.mjs';
 import { ensureCredentials } from './credentials.mjs';
 import { runPurge } from './purge.mjs';
@@ -252,7 +257,8 @@ async function runPurgeOnly(flags) {
 async function removeGlobalCli() {
   console.log('Removing global CLI...');
   const { spawnSync } = await import('node:child_process');
-  const r = spawnSync('npm', ['uninstall', '-g', '@sogni-ai/sogni-creative-agent-skill'], {
+  const npm = npmInvocation(['uninstall', '-g', '@sogni-ai/sogni-creative-agent-skill']);
+  const r = spawnSync(npm.command, npm.args, {
     encoding: 'utf8',
     stdio: ['inherit', 'inherit', 'pipe'],
   });

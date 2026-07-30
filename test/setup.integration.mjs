@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { delimiter, join } from 'node:path';
 
 function makeFakeNpmRoot() {
   const root = mkdtempSync(join(tmpdir(), 'sogni-int-npm-'));
@@ -24,6 +24,42 @@ function makeFakeNpmRoot() {
   writeFileSync(join(pkgDir, 'scripts/check-creative-agent-runtime.mjs'), '\n');
   writeFileSync(join(pkgDir, 'generated/creative-agent-runtime.mjs'), '\n');
   return root;
+}
+
+function writeFailingNpmShim(binDir, detail) {
+  const npmExecPath = join(binDir, 'npm-cli.mjs');
+  writeFileSync(
+    npmExecPath,
+    `console.error(${JSON.stringify('npm error code EACCES')});\n` +
+      `console.error(${JSON.stringify(`npm error Error: EACCES: permission denied, ${detail}`)});\n` +
+      'process.exitCode = 1;\n'
+  );
+
+  if (process.platform === 'win32') {
+    writeFileSync(
+      join(binDir, 'npm.cmd'),
+      `@echo off\r\necho npm error code EACCES 1>&2\r\necho npm error Error: EACCES: permission denied, ${detail} 1>&2\r\nexit /b 1\r\n`
+    );
+    return npmExecPath;
+  }
+
+  writeFileSync(
+    join(binDir, 'npm'),
+    `#!/bin/sh\necho "npm error code EACCES" >&2\necho "npm error Error: EACCES: permission denied, ${detail}" >&2\nexit 1\n`,
+    { mode: 0o755 }
+  );
+  return npmExecPath;
+}
+
+function withPathPrefix(env, binDir) {
+  const pathEntry = Object.entries(env).find(([key]) => key.toLowerCase() === 'path');
+  const normalized = Object.fromEntries(
+    Object.entries(env).filter(([key]) => key.toLowerCase() !== 'path')
+  );
+  return {
+    ...normalized,
+    PATH: `${binDir}${delimiter}${pathEntry?.[1] ?? ''}`,
+  };
 }
 
 test('--dry-run prints detection table and writes nothing', (t) => {
@@ -146,12 +182,11 @@ test('--only for a missing local runtime exits before global CLI install', (t) =
 
   const r = spawnSync(process.execPath, ['bin/setup.mjs', '--only=codex', '--yes'], {
     cwd: process.cwd(),
-    env: {
+    env: withPathPrefix({
       ...process.env,
       HOME: home,
       USERPROFILE: home,
-      PATH: `${binDir}:${process.env.PATH}`,
-    },
+    }, binDir),
     encoding: 'utf8',
   });
 
@@ -174,14 +209,13 @@ test('--dry-run skips the global CLI install entirely', (t) => {
 
   const r = spawnSync(process.execPath, ['bin/setup.mjs', '--dry-run', '--yes', '--no-credentials'], {
     cwd: process.cwd(),
-    env: {
+    env: withPathPrefix({
       ...process.env,
       HOME: home,
       USERPROFILE: home,
       INSTALL_CLI: '', // make sure the env-var skip is NOT what saves us
       SOGNI_TEST_NPM_ROOT: npmRoot,
-      PATH: `${binDir}:${process.env.PATH}`,
-    },
+    }, binDir),
     encoding: 'utf8',
   });
   if (r.status !== 0) {
@@ -191,37 +225,34 @@ test('--dry-run skips the global CLI install entirely', (t) => {
   assert.equal(existsSync(markerPath), false, 'npm must not be invoked during --dry-run');
 });
 
-test('permission-denied global install suggests rerunning the full setup command with sudo', (t) => {
+test('permission-denied global install suggests rerunning the full setup command with admin rights', (t) => {
   const home = mkdtempSync(join(tmpdir(), 'sogni-int-home-'));
   mkdirSync(join(home, '.codex'), { recursive: true });
   t.after(() => rmSync(home, { recursive: true, force: true }));
 
   const binDir = mkdtempSync(join(tmpdir(), 'sogni-int-bin-'));
   t.after(() => rmSync(binDir, { recursive: true, force: true }));
-  writeFileSync(
-    join(binDir, 'npm'),
-    '#!/bin/sh\n' +
-      'echo "npm error code EACCES" >&2\n' +
-      'echo "npm error Error: EACCES: permission denied, mkdir \'/usr/local/lib/node_modules/@sogni-ai\'" >&2\n' +
-      'exit 1\n',
-    { mode: 0o755 }
-  );
+  const npmExecPath = writeFailingNpmShim(binDir, "mkdir '/usr/local/lib/node_modules/@sogni-ai'");
 
   const r = spawnSync(process.execPath, ['bin/setup.mjs', '--only=codex', '--version=2.3.0'], {
     cwd: process.cwd(),
-    env: {
+    env: withPathPrefix({
       ...process.env,
       HOME: home,
       USERPROFILE: home,
       INSTALL_CLI: '',
-      PATH: `${binDir}:${process.env.PATH}`,
-    },
+      npm_execpath: npmExecPath,
+      npm_node_execpath: process.execPath,
+    }, binDir),
     encoding: 'utf8',
   });
 
   assert.equal(r.status, 1);
   assert.match(r.stderr, /Could not install/);
-  assert.match(r.stderr, /sudo npx setup-sogni-agent-skill --only=codex --version=2.3.0/);
+  const elevatedPrefix = process.platform === 'win32' ? '' : 'sudo ';
+  assert.ok(
+    r.stderr.includes(`${elevatedPrefix}npx setup-sogni-agent-skill --only=codex --version=2.3.0`)
+  );
   assert.match(r.stderr, /detect your agents and prompt for your Sogni API key in this same flow/);
   assert.equal(
     existsSync(join(home, '.codex/skills/sogni-creative-agent-skill')),
@@ -254,28 +285,27 @@ test('--uninstall --remove-cli aborts before removing skill files when npm needs
 
   const binDir = mkdtempSync(join(tmpdir(), 'sogni-int-bin-'));
   t.after(() => rmSync(binDir, { recursive: true, force: true }));
-  writeFileSync(
-    join(binDir, 'npm'),
-    '#!/bin/sh\n' +
-      'echo "npm error code EACCES" >&2\n' +
-      'echo "npm error Error: EACCES: permission denied, unlink \'/usr/local/bin/sogni-agent\'" >&2\n' +
-      'exit 1\n',
-    { mode: 0o755 }
-  );
+  const npmExecPath = writeFailingNpmShim(binDir, "unlink '/usr/local/bin/sogni-agent'");
 
   const r = spawnSync(process.execPath, ['bin/setup.mjs', '--uninstall', '--remove-cli', '--only=codex'], {
     cwd: process.cwd(),
-    env: {
+    env: withPathPrefix({
       ...process.env,
       HOME: home,
       USERPROFILE: home,
-      PATH: `${binDir}:${process.env.PATH}`,
-    },
+      npm_execpath: npmExecPath,
+      npm_node_execpath: process.execPath,
+    }, binDir),
     encoding: 'utf8',
   });
 
   assert.equal(r.status, 1);
   assert.match(r.stderr, /Could not remove the global CLI/);
-  assert.match(r.stderr, /sudo npx setup-sogni-agent-skill --uninstall --remove-cli --only=codex/);
+  const elevatedPrefix = process.platform === 'win32' ? '' : 'sudo ';
+  assert.ok(
+    r.stderr.includes(
+      `${elevatedPrefix}npx setup-sogni-agent-skill --uninstall --remove-cli --only=codex`
+    )
+  );
   assert.equal(existsSync(skillDir), true, 'skill files must remain when CLI removal fails first');
 });

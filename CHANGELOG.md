@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.7.0
+
+### Features
+
+- **Host-owned agent attribution.** Claude Code, OpenAI Codex CLI, and Hermes
+  installs now route documented Sogni commands through an installer-owned
+  launcher that adds fixed framework and personal-skill surface markers. Claude
+  Desktop adds the equivalent fixed markers to its MCP environment. These
+  markers contain only the framework, surface, and public skill version; they
+  do not include credentials, prompts, or account identifiers.
+- The default Creative Agent Skill install is pinned to the tested telemetry
+  release `3.21.0`. `--version=X.Y.Z` remains available for an explicit
+  override.
+
+### Fixed
+
+- Global npm install and uninstall now run through npm's JavaScript entry point
+  on Windows, avoiding direct `npm.cmd` process launches while preserving the
+  existing permission guidance and command arguments.
+
 ## 0.6.0
 
 ### Features
