@@ -10,7 +10,13 @@ test('install writes SKILL.md only with 0o600 perms', (t) => {
   adapter.install({ srcDir: FIXTURE_SKILL_SRC, version: '2.3.0', category: 'media' });
   const skillDir = join(home, '.hermes/skills/media/sogni-creative-agent-skill');
   assert.ok(existsSync(join(skillDir, 'SKILL.md')));
+  assert.ok(existsSync(join(skillDir, '.sogni-agent-launcher.mjs')));
   assert.equal(existsSync(join(skillDir, 'llm.txt')), false);
+  const installedSkill = readFileSync(join(skillDir, 'SKILL.md'), 'utf8');
+  assert.match(installedSkill, /Installed host command/);
+  const launcher = readFileSync(join(skillDir, '.sogni-agent-launcher.mjs'), 'utf8');
+  assert.match(launcher, /SOGNI_AGENT_FRAMEWORK: "hermes-agent"/);
+  assert.match(launcher, /SOGNI_AGENT_SURFACE: "personal_skill"/);
   // POSIX mode bits do not exist on Windows: fs.chmod cannot express
   // user/group/other separation, and statSync reports 0o666 for any writable
   // file regardless of what mode was requested. The install code still calls

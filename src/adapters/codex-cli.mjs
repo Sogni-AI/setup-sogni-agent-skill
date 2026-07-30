@@ -2,7 +2,13 @@ import { copyFileSync, cpSync, existsSync, mkdirSync, rmSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { writeMarker, readMarker } from './shared.mjs';
+import {
+  HOST_LAUNCHER_NAME,
+  materializeSkillLauncher,
+  readMarker,
+  writeHostLauncher,
+  writeMarker,
+} from './shared.mjs';
 
 const SKILL_NAME = 'sogni-creative-agent-skill';
 
@@ -68,6 +74,13 @@ export default {
       cpSync(from, to, { recursive: true });
       written.push(to);
     }
+    const launcherPath = writeHostLauncher(dir, {
+      srcDir,
+      version,
+      framework: 'codex',
+    });
+    materializeSkillLauncher(join(dir, 'SKILL.md'), launcherPath);
+    written.push(join(dir, HOST_LAUNCHER_NAME));
     writeMarker(dir, { version, adapter: 'codex-cli', srcDir });
     written.push(join(dir, '.sogni-installed.json'));
 

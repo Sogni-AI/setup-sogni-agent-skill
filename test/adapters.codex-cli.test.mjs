@@ -22,6 +22,11 @@ test('install copies full package layout into ~/.codex/skills/', (t) => {
   const marker = JSON.parse(readFileSync(join(skillDir, '.sogni-installed.json'), 'utf8'));
   assert.equal(marker.version, '2.3.0');
   assert.equal(marker.adapter, 'codex-cli');
+  const installedSkill = readFileSync(join(skillDir, 'SKILL.md'), 'utf8');
+  assert.match(installedSkill, /Installed host command/);
+  const launcher = readFileSync(join(skillDir, '.sogni-agent-launcher.mjs'), 'utf8');
+  assert.match(launcher, /SOGNI_AGENT_FRAMEWORK: "codex"/);
+  assert.match(launcher, /SOGNI_AGENT_SURFACE: "personal_skill"/);
 });
 
 test('install does not copy node_modules even if present in srcDir', (t) => {

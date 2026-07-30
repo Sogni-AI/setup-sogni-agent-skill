@@ -58,6 +58,9 @@ test('install writes a merged mcpServers entry', (t) => {
   assert.deepEqual(entry.args, [join(srcDir, 'desktop-extension', 'server', 'index.mjs')]);
   assert.equal(entry.env.SOGNI_AGENT_PATH, join(srcDir, 'sogni-agent.mjs'));
   assert.equal(entry.env.SOGNI_SKILL_VERSION, '3.7.0');
+  assert.equal(entry.env.SOGNI_AGENT_FRAMEWORK, 'claude-desktop');
+  assert.equal(entry.env.SOGNI_AGENT_SURFACE, 'mcp');
+  assert.equal(entry.env.SOGNI_AGENT_SURFACE_VERSION, '3.7.0');
 });
 
 test('install creates the config file when absent', (t) => {

@@ -1,7 +1,13 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { writeMarker, readMarker } from './shared.mjs';
+import {
+  HOST_LAUNCHER_NAME,
+  materializeSkillLauncher,
+  readMarker,
+  writeHostLauncher,
+  writeMarker,
+} from './shared.mjs';
 
 const SKILL_NAME = 'sogni-creative-agent-skill';
 
@@ -66,12 +72,18 @@ export default {
     const content = readFileSync(join(srcDir, 'SKILL.md'));
     writeFileSync(skillMdPath, content, { mode: 0o600 });
 
+    const launcherPath = writeHostLauncher(dir, {
+      srcDir,
+      version,
+      framework: 'hermes-agent',
+    });
+    materializeSkillLauncher(skillMdPath, launcherPath);
     writeMarker(dir, { version, adapter: 'hermes', srcDir });
 
     return {
       status: existingMarker ? 'upgraded' : 'installed',
       previousVersion: existingMarker?.version ?? null,
-      written: [skillMdPath, join(dir, '.sogni-installed.json')],
+      written: [skillMdPath, join(dir, HOST_LAUNCHER_NAME), join(dir, '.sogni-installed.json')],
       notes: [`Category: ${targetCategory}`],
     };
   },
