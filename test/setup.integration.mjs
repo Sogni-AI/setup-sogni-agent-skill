@@ -225,7 +225,7 @@ test('--dry-run skips the global CLI install entirely', (t) => {
   assert.equal(existsSync(markerPath), false, 'npm must not be invoked during --dry-run');
 });
 
-test('permission-denied global install suggests rerunning the full setup command with sudo', (t) => {
+test('permission-denied global install suggests rerunning the full setup command with admin rights', (t) => {
   const home = mkdtempSync(join(tmpdir(), 'sogni-int-home-'));
   mkdirSync(join(home, '.codex'), { recursive: true });
   t.after(() => rmSync(home, { recursive: true, force: true }));
@@ -249,7 +249,10 @@ test('permission-denied global install suggests rerunning the full setup command
 
   assert.equal(r.status, 1);
   assert.match(r.stderr, /Could not install/);
-  assert.match(r.stderr, /sudo npx setup-sogni-agent-skill --only=codex --version=2.3.0/);
+  const elevatedPrefix = process.platform === 'win32' ? '' : 'sudo ';
+  assert.ok(
+    r.stderr.includes(`${elevatedPrefix}npx setup-sogni-agent-skill --only=codex --version=2.3.0`)
+  );
   assert.match(r.stderr, /detect your agents and prompt for your Sogni API key in this same flow/);
   assert.equal(
     existsSync(join(home, '.codex/skills/sogni-creative-agent-skill')),
@@ -298,6 +301,11 @@ test('--uninstall --remove-cli aborts before removing skill files when npm needs
 
   assert.equal(r.status, 1);
   assert.match(r.stderr, /Could not remove the global CLI/);
-  assert.match(r.stderr, /sudo npx setup-sogni-agent-skill --uninstall --remove-cli --only=codex/);
+  const elevatedPrefix = process.platform === 'win32' ? '' : 'sudo ';
+  assert.ok(
+    r.stderr.includes(
+      `${elevatedPrefix}npx setup-sogni-agent-skill --uninstall --remove-cli --only=codex`
+    )
+  );
   assert.equal(existsSync(skillDir), true, 'skill files must remain when CLI removal fails first');
 });
