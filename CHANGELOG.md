@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- The default Creative Agent Skill install is now `3.40.1`, the current
+  published release. The previous default, `3.21.0`, still offered the retired
+  `flux2_dev_fp8` model as its `pro` preset, and the public first-result guide
+  sends new users through this installer. `--version=X.Y.Z` still overrides.
+
 ## 0.7.0
 
 ### Features
