@@ -9,7 +9,7 @@ test('parses empty argv', () => {
   assert.equal(flags.uninstall, false);
   assert.equal(flags.removeCli, false);
   assert.equal(flags.noCredentials, false);
-  assert.equal(DEFAULT_SKILL_VERSION, '3.21.0');
+  assert.equal(DEFAULT_SKILL_VERSION, '3.40.1');
   assert.equal(flags.version, DEFAULT_SKILL_VERSION);
   assert.equal(flags.hermesCategory, 'media');
   assert.deepEqual(flags.only, null);
