@@ -1,3 +1,5 @@
+import { isExactSemver } from './semver.mjs';
+
 const BOOL_FLAGS = new Set([
   '--yes', '-y',
   '--dry-run',
@@ -20,8 +22,6 @@ const VALUE_FLAGS = new Set([
 const RUNTIME_FILTERS = new Set(['claude', 'desktop', 'codex', 'hermes', 'chatgpt']);
 const ALL_RUNTIME_FILTERS = [...RUNTIME_FILTERS];
 
-export const DEFAULT_SKILL_VERSION = '3.40.1';
-
 function parseRuntimeFilterFlag(key, value) {
   const values = value.split(',').map(s => s.trim()).filter(Boolean);
   if (values.length === 0) {
@@ -36,6 +36,19 @@ function parseRuntimeFilterFlag(key, value) {
 
 function requireValue(key, value) {
   if (!value.trim()) throw new Error(`${key} requires a value.`);
+  return value;
+}
+
+// An explicit version is installed exactly as given, so it must name one
+// release. Dist-tags and ranges would let npm pick the release instead.
+function parseVersionFlag(key, value) {
+  requireValue(key, value);
+  if (!isExactSemver(value)) {
+    throw new Error(
+      `${key} must be an exact release version in X.Y.Z form, not "${value}". ` +
+      `Omit ${key} to install the latest release published on npm.`
+    );
+  }
   return value;
 }
 
@@ -57,7 +70,8 @@ export function parseFlags(argv) {
     noCredentials: false,
     noUi: false,
     boring: false,
-    version: DEFAULT_SKILL_VERSION,
+    // null = install the version npm's `latest` dist-tag names at run time.
+    version: null,
     hermesCategory: 'media',
     only: null,
     exclude: null,
@@ -82,7 +96,7 @@ export function parseFlags(argv) {
       if (!VALUE_FLAGS.has(key)) throw new Error(`Unknown flag: ${arg}`);
       if (key === '--only') out.only = parseRuntimeFilterFlag(key, value);
       else if (key === '--exclude') out.exclude = parseRuntimeFilterFlag(key, value);
-      else if (key === '--version') out.version = requireValue(key, value);
+      else if (key === '--version') out.version = parseVersionFlag(key, value);
       else if (key === '--hermes-category') out.hermesCategory = requireValue(key, value);
       else if (key === '--output-chatgpt-bundle') out.outputChatgptBundle = requireValue(key, value);
       continue;

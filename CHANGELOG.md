@@ -1,13 +1,32 @@
 # Changelog
 
-## 0.7.1
+## Unreleased
 
-### Fixed
+### Changed
 
-- The default Creative Agent Skill install is now `3.40.1`, the current
-  published release. The previous default, `3.21.0`, still offered the retired
-  `flux2_dev_fp8` model as its `pro` preset, and the public first-result guide
-  sends new users through this installer. `--version=X.Y.Z` still overrides.
+- **Setup installs the Creative Agent Skill's current npm release.** Setup
+  used to install a skill version pinned inside the installer, and every pin
+  fell behind within hours of the next skill release. 0.7.0 still installs
+  `3.21.0`, which offers the retired `flux2_dev_fp8` model as its `pro`
+  preset. Setup now runs
+  `npm view @sogni-ai/sogni-creative-agent-skill dist-tags.latest` and prints
+  the version. It then installs exactly that version and records it in each
+  runtime's install marker, the host launcher and the Claude Desktop MCP entry.
+  The lookup uses your npm configuration, as the install does, so custom,
+  scoped and proxied registries apply to both. This replaces 0.7.1, which
+  re-pinned `3.40.1` and was never published.
+- **No fallback version.** If the lookup fails, runs past 90 seconds or returns
+  something that is not a valid semantic version, setup stops with npm's error
+  before installing anything.
+- `--version=X.Y.Z` still installs a specific release and skips the lookup.
+  It now accepts only an exact version. Dist-tags and ranges such as `latest`
+  or `^3.40.0` are rejected, because npm would pick the release instead.
+- After the global install, setup checks that the package in `npm root -g` is
+  the version it chose. If not, it stops rather than register a different
+  version in your agents.
+- `--dry-run` now looks up the version with a read-only registry query and
+  shows the upgrade a real run would make. It still installs and writes
+  nothing.
 
 ## 0.7.0
 

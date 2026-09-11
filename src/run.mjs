@@ -11,6 +11,8 @@ import {
   installCli,
   isPermissionError,
   npmInvocation,
+  resolveLatestSkillVersion,
+  SKILL_PACKAGE,
 } from './install-cli.mjs';
 import { resolveSkillSource } from './resolve-skill.mjs';
 import { ensureCredentials } from './credentials.mjs';
@@ -90,6 +92,29 @@ function isChatgptRequested(flags) {
   );
 }
 
+// The exact skill version this run installs: the one given with --version,
+// otherwise the one npm's `latest` dist-tag names right now. A failed lookup
+// throws; setup never substitutes a version of its own.
+async function selectSkillVersion(flags) {
+  if (flags.version) {
+    console.log(kleur.bold(`Using ${SKILL_PACKAGE}@${flags.version} (requested with --version).`));
+    return flags.version;
+  }
+  console.log(kleur.bold(`Looking up the latest ${SKILL_PACKAGE} release on npm...`));
+  const version = await resolveLatestSkillVersion();
+  console.log(`  ${kleur.green('✓')} npm latest is ${version}`);
+  return version;
+}
+
+function assertInstalledVersion(skill, version) {
+  if (skill.version === version) return;
+  throw new Error(
+    `Expected ${SKILL_PACKAGE}@${version} in the global npm folder, but ${skill.srcDir} contains ${skill.version}. ` +
+    'The npm that ran the install and `npm root -g` may belong to different Node.js installations; ' +
+    'check which npm is first on your PATH and what `npm root -g` prints, then re-run.'
+  );
+}
+
 export async function run(flags) {
   if (flags.uninstall) {
     return runUninstall(flags);
@@ -105,7 +130,9 @@ export async function run(flags) {
   if (!flags.dryRun && !isSudoRoot() && flags.only && !preflightChatgptRequested) {
     const preflightFiltered = filterByFlags(detectAll(), flags);
     if (selectedLocalRuntimes(preflightFiltered).length === 0) {
-      printDetectionTable(preflightFiltered, flags.version, { chatgptRequested: false, fx });
+      // Every row here is "not found", so no target version is shown and
+      // npm is not asked for one.
+      printDetectionTable(preflightFiltered, null, { chatgptRequested: false, fx });
       console.log(kleur.yellow('No selected local agent runtimes found. Nothing was installed.'));
       console.log('Run the target agent once so it creates its config directory, then re-run this command.');
       console.log('For ChatGPT Custom-GPT instructions instead, run `npx setup-sogni-agent-skill --only=chatgpt`.');
@@ -113,19 +140,23 @@ export async function run(flags) {
     }
   }
 
-  // 1. Install the global CLI (writes nothing else yet). A dry run must not
+  // 1. Choose the exact skill version. A dry run looks it up too (a read-only
+  // registry query) so its plan names the version a real run would install.
+  const version = await selectSkillVersion(flags);
+
+  // 2. Install the global CLI (writes nothing else yet). A dry run must not
   // mutate the system either, so the global install is skipped too.
   let cli;
   let elevatedSkill = null;
   if (flags.dryRun) {
-    console.log(kleur.cyan(`Dry run — skipping global CLI install (would run: npm install -g @sogni-ai/sogni-creative-agent-skill@${flags.version}).`));
+    console.log(kleur.cyan(`Dry run — skipping global CLI install (would run: npm install -g ${SKILL_PACKAGE}@${version}).`));
     cli = { skipped: true, reason: 'dry-run' };
   } else {
-    console.log(kleur.bold(`Installing @sogni-ai/sogni-creative-agent-skill@${flags.version} globally...`));
+    console.log(kleur.bold(`Installing ${SKILL_PACKAGE}@${version} globally...`));
     const live = new LivePhase(fx);
     live.start('npm is fetching the skill package…');
     try {
-      cli = await installCli({ version: flags.version, quiet: fx });
+      cli = await installCli({ version, quiet: fx });
     } finally {
       live.stop();
     }
@@ -139,24 +170,19 @@ export async function run(flags) {
 
   dropSudoForUserFiles();
 
-  // 1b. Offer ffmpeg (interactive installs only) — used by clip merging and frame extraction.
+  // 2b. Offer ffmpeg (interactive installs only) — used by clip merging and frame extraction.
   await offerFfmpegInstall({ interactive: !flags.yes && !isSudoRoot() });
 
-  // 2. Resolve skill source on disk. Under --dry-run the package may not be
-  // installed globally yet — fall back to the requested version for display.
-  let skill;
-  if (elevatedSkill) {
-    skill = elevatedSkill;
-  } else {
-    try {
-      skill = resolveSkillSource();
-    } catch (err) {
-      if (!flags.dryRun) throw err;
-      skill = { srcDir: null, version: flags.version };
-    }
+  // 3. Resolve the installed package on disk and confirm it is the version
+  // chosen above, so every runtime records the version that was printed. A
+  // dry run installs nothing, so there is nothing on disk to check.
+  let skill = null;
+  if (!flags.dryRun) {
+    skill = elevatedSkill ?? resolveSkillSource();
+    assertInstalledVersion(skill, version);
   }
 
-  // 3. Detect runtimes and filter.
+  // 4. Detect runtimes and filter.
   const all = detectAll();
   const filtered = filterByFlags(all, flags);
 
@@ -170,7 +196,7 @@ export async function run(flags) {
     ...(chatgptTarget && chatgptRequested ? [chatgptTarget] : []),
   ];
 
-  printDetectionTable(filtered, skill.version, { chatgptRequested, fx });
+  printDetectionTable(filtered, version, { chatgptRequested, fx });
 
   if (flags.dryRun) {
     console.log(kleur.cyan('Dry run — nothing will be written.'));
@@ -188,7 +214,7 @@ export async function run(flags) {
     }
   }
 
-  // 4. Run adapters.
+  // 5. Run adapters.
   const adapterResults = [];
   let failures = 0;
   for (const d of adapterTargets) {
@@ -235,12 +261,12 @@ export async function run(flags) {
     }
   }
 
-  // 5. Credentials.
+  // 6. Credentials.
   const credentials = localInstallable.length === 0 && chatgptRequested
     ? { action: 'skipped-chatgpt' }
     : await ensureCredentials({ skipPrompt: flags.noCredentials });
 
-  // 6. Summary.
+  // 7. Summary.
   printSummary({ adapterResults, cli, credentials });
   if (failures === 0) await finale({ enabled: fx });
 

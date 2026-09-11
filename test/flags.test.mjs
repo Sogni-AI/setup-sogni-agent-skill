@@ -1,6 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { DEFAULT_SKILL_VERSION, parseFlags } from '../src/flags.mjs';
+import * as flagsModule from '../src/flags.mjs';
+
+const { parseFlags } = flagsModule;
 
 test('parses empty argv', () => {
   const flags = parseFlags([]);
@@ -9,8 +11,8 @@ test('parses empty argv', () => {
   assert.equal(flags.uninstall, false);
   assert.equal(flags.removeCli, false);
   assert.equal(flags.noCredentials, false);
-  assert.equal(DEFAULT_SKILL_VERSION, '3.40.1');
-  assert.equal(flags.version, DEFAULT_SKILL_VERSION);
+  // No version flag means "install npm's latest", resolved at run time.
+  assert.equal(flags.version, null);
   assert.equal(flags.hermesCategory, 'media');
   assert.deepEqual(flags.only, null);
   assert.deepEqual(flags.exclude, null);
@@ -55,6 +57,21 @@ test('rejects filter combinations that select no runtimes', () => {
 
 test('parses --version=X.Y.Z', () => {
   assert.equal(parseFlags(['--version=2.3.0']).version, '2.3.0');
+  assert.equal(parseFlags(['--version=3.1.0-alpha.1']).version, '3.1.0-alpha.1');
+});
+
+test('the installer no longer carries a hard-coded skill version', () => {
+  assert.equal('DEFAULT_SKILL_VERSION' in flagsModule, false);
+});
+
+test('rejects --version values that are not one exact release', () => {
+  for (const value of ['latest', 'alpha', '^3.40.0', '3.x', '3.40', 'v3.40.1', '3.40.1 ']) {
+    assert.throws(
+      () => parseFlags([`--version=${value}`]),
+      /--version must be an exact release version in X\.Y\.Z form/,
+      value
+    );
+  }
 });
 
 test('rejects blank value flags', () => {
