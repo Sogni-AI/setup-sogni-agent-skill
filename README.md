@@ -123,7 +123,7 @@ it.
 
 - Node.js ≥ 22.11.0 (same floor as the `sogni-agent` CLI)
 - `npm` on `$PATH`
-- A [Sogni API key](https://dashboard.sogni.ai)
+- A [Sogni API key](https://dashboard.sogni.ai/api-keys)
 - Optional: **ffmpeg**, used by video/audio features (stitching clips,
   extracting frames, adding music). When it's missing, interactive setup offers
   to install it via your system package manager (Homebrew / winget / apt / dnf /
