@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.8.1
+
+### Fixed
+
+- The API key prompt and README now link to the API Keys page,
+  `https://dashboard.sogni.ai/api-keys`. The dashboard home now opens the login
+  form, so new users needed an extra click to reach signup from there.
+
 ## 0.8.0
 
 ### Changed
