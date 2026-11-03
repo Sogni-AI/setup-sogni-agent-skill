@@ -25,6 +25,15 @@ test('install copies skill files into ~/.claude/skills/', (t) => {
   assert.deepEqual(result.written.length > 0, true);
 });
 
+test('install copies the guides SKILL.md tells agents to read', (t) => {
+  const home = withTempHome(t);
+  const result = adapter.install({ srcDir: FIXTURE_SKILL_SRC, version: '2.3.0' });
+  const skillDir = join(home, '.claude/skills/sogni-creative-agent-skill');
+  assert.ok(existsSync(join(skillDir, 'references/models.md')));
+  assert.ok(existsSync(join(skillDir, 'references/video-prompting.md')));
+  assert.ok(result.written.includes(join(skillDir, 'references')));
+});
+
 test('install is idempotent at same version', (t) => {
   withTempHome(t);
   adapter.install({ srcDir: FIXTURE_SKILL_SRC, version: '2.3.0' });

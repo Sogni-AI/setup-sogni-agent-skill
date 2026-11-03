@@ -150,3 +150,25 @@ test('offerFfmpegInstall never prompts when non-interactive', async (t) => {
   });
   assert.equal(result.installed, false);
 });
+
+test('offerFfmpegInstall never installs during a dry run', async (t) => {
+  const cap = captureConsole();
+  const calls = [];
+  prompts.inject([true]);
+  t.after(() => {
+    cap.restore();
+    prompts._injected = undefined;
+  });
+  await offerFfmpegInstall({
+    interactive: true,
+    dryRun: true,
+    ttyOverride: true,
+    platformOverride: 'darwin',
+    exec: (command, args) => {
+      calls.push([command, ...(args ?? [])].join(' '));
+      return { status: 0 };
+    },
+    check: () => false,
+  });
+  assert.deepEqual(calls.filter((call) => call.includes('install')), []);
+});

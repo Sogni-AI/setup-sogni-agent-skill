@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.8.1
+
+### Fixed
+
+- The API key prompt, README and ChatGPT instructions now link to
+  `https://dashboard.sogni.ai/api-key`, which takes a new user straight to signup. The dashboard home
+  now opens the login form, which added clicks.
+- Claude Code and Hermes now get the skill's `references/` guides. `SKILL.md`
+  tells agents to read them before acting, and only Codex had them.
+- `--dry-run` no longer offers to install ffmpeg.
+- The ChatGPT instructions no longer mention an OpenAPI schema that doesn't
+  exist.
+
 ## 0.8.0
 
 ### Changed

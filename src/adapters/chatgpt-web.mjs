@@ -17,8 +17,8 @@ with a Custom GPT, follow these steps:
    Instructions:
 ${skillContent.split('\n').map(l => '   ' + l).join('\n')}
 
-4. Under "Actions", add the Sogni API (see https://dashboard.sogni.ai for an API key
-   and the latest OpenAPI schema). The sogni-agent CLI is not available in the web
+4. Under "Actions", add the Sogni API (see https://docs.sogni.ai/api-reference/ for the API and
+   https://dashboard.sogni.ai/api-key for an API key). The sogni-agent CLI is not available in the web
    sandbox, so the GPT must call the API directly.
 
 5. Save & publish.

@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import adapter from '../src/adapters/hermes.mjs';
 import { withTempHome, FIXTURE_SKILL_SRC } from './helpers.mjs';
 
-test('install writes SKILL.md only with 0o600 perms', (t) => {
+test('install writes SKILL.md with 0o600 perms', (t) => {
   const home = withTempHome(t);
   adapter.install({ srcDir: FIXTURE_SKILL_SRC, version: '2.3.0', category: 'media' });
   const skillDir = join(home, '.hermes/skills/media/sogni-creative-agent-skill');
@@ -25,6 +25,17 @@ test('install writes SKILL.md only with 0o600 perms', (t) => {
     const mode = statSync(join(skillDir, 'SKILL.md')).mode & 0o777;
     assert.equal(mode, 0o600);
   }
+});
+
+test('install copies the guides SKILL.md tells agents to read, but no nested skills', (t) => {
+  const home = withTempHome(t);
+  const result = adapter.install({ srcDir: FIXTURE_SKILL_SRC, version: '2.3.0', category: 'media' });
+  const skillDir = join(home, '.hermes/skills/media/sogni-creative-agent-skill');
+  assert.ok(existsSync(join(skillDir, 'references/models.md')));
+  assert.ok(existsSync(join(skillDir, 'references/video-prompting.md')));
+  assert.ok(result.written.includes(join(skillDir, 'references')));
+  // Hermes registers every SKILL.md under its skills folder, so a copied skills/ would list duplicates.
+  assert.equal(existsSync(join(skillDir, 'skills')), false);
 });
 
 test('backs up existing SKILL.md before overwriting', (t) => {

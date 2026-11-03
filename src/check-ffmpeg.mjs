@@ -80,6 +80,7 @@ export function detectInstaller({ platform: platformName = platform(), exec = sp
 
 export async function offerFfmpegInstall({
   interactive = true,
+  dryRun = false,
   exec = spawnSync,
   check = isFfmpegInstalled,
   platformOverride = null,
@@ -88,7 +89,7 @@ export async function offerFfmpegInstall({
   if (check()) return { installed: true };
 
   const isTty = ttyOverride ?? process.stdin.isTTY === true;
-  const installer = interactive && isTty
+  const installer = interactive && !dryRun && isTty
     ? detectInstaller({ platform: platformOverride ?? platform(), exec })
     : null;
 

@@ -21,7 +21,7 @@ export async function ensureCredentials({ skipPrompt = false } = {}) {
   const { key } = await prompts({
     type: 'password',
     name: 'key',
-    message: 'Sogni API key (get one at https://dashboard.sogni.ai). Leave blank to skip.',
+    message: 'Sogni API key (get one at https://dashboard.sogni.ai/api-key). Leave blank to skip.',
   });
 
   if (!key) return { action: 'skipped-user' };
