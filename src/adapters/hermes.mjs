@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -72,6 +72,14 @@ export default {
     const content = readFileSync(join(srcDir, 'SKILL.md'));
     writeFileSync(skillMdPath, content, { mode: 0o600 });
 
+    // SKILL.md tells agents to read these guides before acting. The skill's own skills/ folder stays
+    // behind: Hermes registers every SKILL.md under its skills folder, so copying it would list duplicates.
+    const referencesPath = join(dir, 'references');
+    rmSync(referencesPath, { recursive: true, force: true });
+    if (existsSync(join(srcDir, 'references'))) {
+      cpSync(join(srcDir, 'references'), referencesPath, { recursive: true });
+    }
+
     const launcherPath = writeHostLauncher(dir, {
       srcDir,
       version,
@@ -83,7 +91,7 @@ export default {
     return {
       status: existingMarker ? 'upgraded' : 'installed',
       previousVersion: existingMarker?.version ?? null,
-      written: [skillMdPath, join(dir, HOST_LAUNCHER_NAME), join(dir, '.sogni-installed.json')],
+      written: [skillMdPath, referencesPath, join(dir, HOST_LAUNCHER_NAME), join(dir, '.sogni-installed.json')],
       notes: [`Category: ${targetCategory}`],
     };
   },

@@ -171,7 +171,7 @@ export async function run(flags) {
   dropSudoForUserFiles();
 
   // 2b. Offer ffmpeg (interactive installs only) — used by clip merging and frame extraction.
-  await offerFfmpegInstall({ interactive: !flags.yes && !isSudoRoot() });
+  await offerFfmpegInstall({ interactive: !flags.yes && !isSudoRoot(), dryRun: flags.dryRun });
 
   // 3. Resolve the installed package on disk and confirm it is the version
   // chosen above, so every runtime records the version that was printed. A

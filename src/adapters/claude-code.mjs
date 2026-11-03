@@ -1,4 +1,4 @@
-import { copyFileSync, existsSync, mkdirSync, rmSync } from 'node:fs';
+import { copyFileSync, cpSync, existsSync, mkdirSync, rmSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -11,6 +11,8 @@ import {
 
 const SKILL_NAME = 'sogni-creative-agent-skill';
 const FILES_TO_COPY = ['SKILL.md', 'llm.txt', 'version.mjs', 'skill-package.json'];
+// SKILL.md tells agents to read these guides before acting.
+const DIRS_TO_COPY = ['references'];
 
 function skillDir() {
   return join(homedir(), '.claude', 'skills', SKILL_NAME);
@@ -40,6 +42,14 @@ export default {
       if (!existsSync(from)) continue;
       const to = join(dir, file);
       copyFileSync(from, to);
+      written.push(to);
+    }
+    for (const entry of DIRS_TO_COPY) {
+      const from = join(srcDir, entry);
+      if (!existsSync(from)) continue;
+      const to = join(dir, entry);
+      rmSync(to, { recursive: true, force: true });
+      cpSync(from, to, { recursive: true });
       written.push(to);
     }
     const launcherPath = writeHostLauncher(dir, {
